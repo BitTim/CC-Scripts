@@ -19,15 +19,14 @@ local causeStrings = {
     HASH = "Wrong output",
     BALANCE = "Balance too low",
     STOCK = "Not enough in ATM",
-    RECEPIANT = "Invalid recipiant",
-    AMOUNT = "Invalid Amount"
+    RECIPIANT = "Invalid recipiant"
 }
 
 --Init Shell
 term.clear()
 term.setCursorPos(1, 1)
 term.setTextColor(colors.yellow)
-print("ATM " .. versionString)
+print("Terminal " .. versionString)
 
 local mon = peripheral.find("monitor")
 mon.setTextScale(0.5)
@@ -141,7 +140,56 @@ local auth = function(name, pin)
     elseif reply.state == "SUCCESS" then
         term.setTextColor(colors.green)
         print(centerText("Welcome!", 15))
-        sleep(1)
+        sleep(2)
+        return true
+    end
+end
+
+--Get Balance
+local balance = function(name)
+    local p = {head = "BAL", name = name}
+    local msg = textutils.serialize(p)
+
+    UI_base()
+    term.setCursorPos(1, 8)
+    term.setTextColor(colors.red)
+
+    local reply = sendPacketForReply(serverAddress, msg, "BAL")
+    if reply == -1 then
+        print(centerText("Unknown Error", 15))
+        sleep(2)
+    else
+        print(centerText(reply.balance .. " €", 15))
+        sleep(2)
+    end
+
+    term.setTextColor(colors.white)
+end
+
+--Transfer
+local transfer = function(name, recipiant, amount)
+    local p = {head = "TRANSFER", name = name, recipiant = recipiant, amount = amount}
+    local msg = textutils.serialize(p)
+
+    UI_base()
+    term.setCursorPos(1, 8)
+    term.setTextColor(colors.red)
+
+    local reply = sendPacketForReply(serverAddress, msg, "TRANSFER")
+    if reply == -1 then
+        print(centerText("Unknown Error", 15))
+        sleep(2)
+        return
+    end
+
+    if reply.state == "FAIL" then
+        print(centerText(causeStrings[reply.cause], 15))
+        sleep(2)
+        return false
+    elseif reply.state == "SUCCESS" then
+        term.setTextColor(colors.green)
+        print(centerText("Success!", 15))
+        sleep(2)
         return true
     end
 end
@@ -176,10 +224,11 @@ local UI_invalidDisk = function()
     print(centerText("Invalid card", 15))
 end
 
-local UI_drawNumberInput = function(x, y, outputString)
+local UI_drawNumberInput = function(x, y, outputString, title)
     term.setCursorPos(x, y)
 
-    write(" +-----------+ \n")
+    write(" +-----------+")
+    write(centerText(title, 15) .. "\n")
     write(" |")
     term.setBackgroundColor(colors.gray)
     write("  "..outputString.."  ")
@@ -204,17 +253,17 @@ local UI_drawNumberInput = function(x, y, outputString)
     write(" +-----------+")    
 end
 
-local UI_numberInput = function(dx, dy, hide)
+local UI_numberInput = function(dx, dy, hide, digits, title)
     local output = ""
     local showInput = hide
 
     while true do
         local outputString = ""
         for i = 1, string.len(output), 1 do outputString = outputString..(showInput and string.sub(output, i, i) or "*") end
-        for i = 1, 6 - string.len(output) do outputString = outputString.."_" end
-        outputString = string.sub(outputString, 1, 3).." "..string.sub(outputString, 4, 6)
+        for i = 1, digits - string.len(output) do outputString = outputString.."_" end
+        if digits % 2 == 0 then outputString = string.sub(outputString, 1, digits / 2).." "..string.sub(outputString, digits / 2 + 1, 6) end
         
-        UI_drawNumberInput(dx, dy, outputString)
+        UI_drawNumberInput(dx, dy, outputString, title)
 
         e, side, x, y = os.pullEvent("monitor_touch")
         
@@ -233,13 +282,22 @@ local UI_numberInput = function(dx, dy, hide)
         elseif (x >= 11 + dx and x <= 13 + dx) and y == 9 + dy then output = string.sub(output, 1, string.len(output) - 1)
         end
         
-        if string.len(output) == 6 then break end
+        if string.len(output) == digits then break end
     end
 
     return output
 end
 
-UI_drawActions = function(x, y, name)
+local UI_cancelled = function()
+    UI_base()
+
+    term.SetCursorPos(1, 8)
+    term.setTextColor(colors.red)
+
+    term.write(centerText("Cancelled", 15))
+end
+
+local UI_drawActions = function(x, y, name)
     term.SetCursorPos(x, y + 1)
     
     term.SetTextColor(titleColor)
@@ -271,7 +329,7 @@ UI_drawActions = function(x, y, name)
     term.setBackgroundColor(colors.black)
 end
 
-UI_actions = function(dx, dy, name)
+local UI_actions = function(dx, dy, name)
     while true do
         UI_drawActions(dx, dy, name)
         e, side, x, y = os.pullEvent("monitor_touch")
@@ -283,6 +341,33 @@ UI_actions = function(dx, dy, name)
             if y == 9 + dy then return "quit" end
         end
     end
+end
+
+local UI_transfer = function(name)
+    local recipiant = UI_numberInput(0, yOff, true, 6, "Recipiant")
+    if recipiant == 1 then
+        UI_cancelled()
+        return -1
+    end
+
+    local amount = UI_numberInput(0, yOff, true, 6, "Amount")
+    if amount == 1 then
+        UI_cancelled()
+        return -1
+    end
+
+    transfer(name, recipiant, amount)
+    return 0
+end
+
+local UI_print = function()
+    UI_base()
+
+    term.SetCursorPos(1, 8)
+    term.setTextColor(colors.blue)
+
+    term.write(centerText("Coming Soon", 15))
+    sleep(2)
 end
 
 -- ================================
@@ -315,7 +400,14 @@ while run do
         end
         
         --Authenticate user
-        if auth(name, UI_numberInput(0, yOff, true)) == false then
+        local pin = UI_numberInput(0, yOff, true, 6, "PIN")
+
+        if pin == 1 then
+            ejectDisk()
+            break
+        end
+
+        if auth(name, pin) == false then
             ejectDisk()
             break
         end
@@ -325,8 +417,8 @@ while run do
         while not quit do
             local action = UI_actions()
             
-            if     action == "balance" then
-                UI_balance()
+            if action == "balance" then
+                balance(name)
             elseif action == "transfer" then
                 UI_transfer()
             elseif action == "print" then

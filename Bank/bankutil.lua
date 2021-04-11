@@ -1,20 +1,29 @@
 os.loadAPI("api/sha")
+os.loadAPI("api/aeslua")
 
 --Init Shell
 term.setTextColor(colors.yellow)
-print("Auth Util v1.0")
+print("Bank Util v1.0")
 
---Create db if not existing
-if not fs.exists(".authDB") then
-    local dbFile = fs.open(".authDB", "w")
+--Create BankDB if not existing
+if not fs.exists(".bankDB") then
+    log("Init", "Creating BankDB")
+    local bdbFile = fs.open(".bankDB", "w")
     dbFile.write("{ }")
     dbFile.close()
 end
 
---Import db
-local dbFile = fs.open(".authDB", "r")
-local db = textutils.unserialize(dbFile.readAll())
+--Import BankDB
+log("Init", "Importing BankDB")
+local dbFile = fs.open(".bankDB", "r")
+local db = textutils.unserialize(bdbFile.readAll())
 dbFile.close()
+
+--Import Encryption Key
+log("Init", "Importing encryption key")
+local keyFile = fs.open(".key", "r")
+local key = textutils.unserialize(keyFile.readAll())
+keyFile.close()
 
 -- ================================
 -- Functions
@@ -27,38 +36,52 @@ local list = function(args)
     end
 end
 
+--Function to get balance
+local balance = function(args)
+    --Check if argument 1 exists
+    if args[2] == nil then
+        --Show error if not
+        term.setTextColor(colors.red)
+        print("Invalid Name \n Usage: balance [name]")
+        return
+    end
+
+    --Print balance
+    print("Balance of " .. args[2] .. ": " .. textutils.serialize(aeslua.decrypt(key, db[args[2]].bal)))
+end
+
 --Function to register new users
 local register = function(args)
     --Check if argument 1 exists
     if args[2] == nil then
         --Show error if not
         term.setTextColor(colors.red)
-        print("Invalid Name \n Usage: register [name] [pin] [accessLevel]")
+        print("Invalid Name \n Usage: register [name] [pin] [id]")
         return
     end
 
-    --Check if argument 1 exists
+    --Check if argument 2 exists
     if args[3] == nil or string.len(args[3]) ~= 6 then
         --Show error if not
         term.setTextColor(colors.red)
-        print("Invalid PIN. PIN has to contain 6 Digits \n Usage: register [name] [pin] [accessLevel]")
+        print("Invalid PIN. PIN has to contain 6 Digits \n Usage: register [name] [pin] [id]")
         return
     end
 
-    --Check if argument 1 exists
-    if args[4] == nil or tonumber(args[4]) == 0 then
+    --Check if argument 3 exists
+    if args[3] == nil or string.len(args[4]) ~= 6 then
         --Show error if not
         term.setTextColor(colors.red)
-        print("Invalid Access level. Access level has to be more than 0 \n Usage: register [name] [pin] [accessLevel]")
+        print("Invalid ID. ID has to contain 6 Digits \n Usage: register [name] [pin] [id]")
         return
     end
 
     --Insert user into AuthDB
-    db[args[2]] = {hash = sha.sha256(args[3]), access = tonumber(args[4])}
+    db[args[2]] = {hash = sha.sha256(args[3]), id = args[4], bal = 0, transfers = {}}
     print("Adding new user: " .. args[2] .. " -> " .. textutils.serialize(db[args[2]]))
 
     --Save AuthDB file
-    local dbFile = fs.open(".authDB", "w")
+    local dbFile = fs.open(".bankDB", "w")
     dbFile.write(textutils.serialize(db))
     dbFile.close()
 end
@@ -85,7 +108,65 @@ local remove = function(args)
     print("Removed user: " .. args[2])
 
     --Save AuthDB file
-    local dbFile = fs.open(".authDB", "w")
+    local dbFile = fs.open(".bankDB", "w")
+    dbFile.write(textutils.serialize(db))
+    dbFile.close()
+end
+
+local add = function(args)
+    --Check if argument 1 exists
+    if args[2] == nil then
+        --Show error if not
+        term.setTextColor(colors.red)
+        print("Invalid Name \n Usage: add [name] [amount]")
+        return
+    end
+
+    --Check if argument 2 exists
+    if args[3] == nil then
+        --Show error if not
+        term.setTextColor(colors.red)
+        print("Invalid Amount \n Usage: add [name] [amount]")
+        return
+    end
+
+    local bal = tonumber(aeslua.decrypt(key, db[args[2]].bal))
+    bal += amount
+    if bal < 0 then bal = 0 end
+
+    db[args[2]].bal = tostring(aeslua.encrypt(key, bal))
+
+    --Save AuthDB file
+    local dbFile = fs.open(".bankDB", "w")
+    dbFile.write(textutils.serialize(db))
+    dbFile.close()
+end
+
+local take = function(args)
+    --Check if argument 1 exists
+    if args[2] == nil then
+        --Show error if not
+        term.setTextColor(colors.red)
+        print("Invalid Name \n Usage: take [name] [amount]")
+        return
+    end
+
+    --Check if argument 2 exists
+    if args[3] == nil then
+        --Show error if not
+        term.setTextColor(colors.red)
+        print("Invalid Amount \n Usage: take [name] [amount]")
+        return
+    end
+
+    local bal = tonumber(aeslua.decrypt(key, db[args[2]].bal))
+    bal -= amount
+    if bal < 0 then bal = 0 end
+
+    db[args[2]].bal = tostring(aeslua.encrypt(key, bal))
+
+    --Save AuthDB file
+    local dbFile = fs.open(".bankDB", "w")
     dbFile.write(textutils.serialize(db))
     dbFile.close()
 end
@@ -116,17 +197,26 @@ while true do
         shell.run("clear")
     elseif tokens[1] == "list" then
         list(tokens)
+    elseif tokens[1] == "list" then
+        balance(tokens)
     elseif tokens[1] == "register" then
         register(tokens)
     elseif tokens[1] == "remove" then
         remove(tokens)
+    elseif tokens[1] == "add" then
+        add(tokens)
+    elseif tokens[1] == "take" then
+        take(tokens)
     elseif tokens[1] == "help" then
         print("help     - Shows this page")
         print("clear    - Clear screen")
         print("exit     - Exits the tool")
         print("list     - Lists all users")
+        print("balance  - Shows user balance")
         print("register - Register user")
         print("remove   - Removes user")
+        print("add      - Adds money to user")
+        print("take     - Takes money from user")
     else
         term.setTextColor(colors.red)
         print("Invalid Command")

@@ -54,7 +54,7 @@ if not fs.exists(".bankDB") then
     bdbFile.close()
 end
 
---Import AuthDB
+--Import BankDB
 log("Init", "Importing BankDB")
 local bdbFile = fs.open(".bankDB", "r")
 local bdb = textutils.unserialize(bdbFile.readAll())
@@ -145,6 +145,81 @@ local balance = function(s, name)
     log("Balance", "Sent balance of " .. name .. " (" .. bal .. "€) to " .. s)
 end
 
+local transfer = function(s, name, recipiant, amount)
+    log("Transfer", "Transferring " .. amount .. "€ from " .. name .. " to " .. recipiant)
+
+    --Check if user has anough money
+    local bal = tonumber(aeslua.decrypt(key, bdb[name].bal))
+    
+    if amount > bal then
+        log("Transfer", "Balance too low: " .. name)
+
+        --Create reply packet
+        local p = {head = "TRANSFER", state = "FAIL", cause = "BALANCE"}
+        local reply = textutils.serialize(p)
+        
+        --Send reply packet
+        sModem.connect(s, 3)
+        sModem.send(s, reply)
+    end
+
+    --Find Recipiant name
+    local target = ""
+    log("Transfer", "Looking up recipiant")
+
+    for key, value in pairs(bdb) do
+        if value.id == recipiant then
+            target = key
+            break
+        end
+    end
+
+    --Recipiant not found
+    if target == "" then
+        log("Transfer", "Recipiant " .. recipiant .. " not found")
+
+        --Create reply packet
+        local p = {head = "AUTH", state = "FAIL", cause = "RECIPIANT"}
+        local reply = textutils.serialize(p)
+        
+        --Send reply packet
+        sModem.connect(s, 3)
+        sModem.send(s, reply)
+    end
+
+    log("Transfer", "Recipiant is: " .. target)
+
+    --Add amount to targets balance
+    local targetBal = tostring(tonumber(aeslua.decrypt(key, bdb[target].bal)) + amount)
+    bdb[target].bal = aeslua.encrypt(key, targetBal)
+    log("Transfer", "Added " .. amount .. " to recipiants balance")
+
+    --Remove amount from sender
+    bal -= amount
+    bdb[name].bal = aeslua.encrypt(key, bal)
+    log("Transfer", "Removed " .. amount .. " from senders balance")
+
+    --Create reply packet
+    local p = {head = "AUTH", state = "SUCCESS"}
+    local reply = textutils.serialize(p)
+        
+    --Send reply packet
+    sModem.connect(s, 3)
+    sModem.send(s, reply)
+
+    --Log transfer in db
+    table.insert(bdb[name].transfers, {from = name, to = target, amount = amount})
+    table.insert(bdb[target].transfers, {from = name, to = target, amount = amount})
+    log("Transfer", "Written transfer log")
+
+    --Save db file
+    fs.move(".bankDB", ".bankDB.bak")
+    local bdbFile = fs.open(".bankDB", "w")
+    bdbFile.write(textutils.serialize(bdb))
+    bdbFile.close()
+    log("Transfer", "Saved Database")
+end
+
 -- ================================
 -- Main Loop
 -- ================================
@@ -162,10 +237,10 @@ while true do
         auth(s, p.name, p.hash)
     elseif p.head == "BAL" then
         balance(s, p.name)
-    elseif p.head == "DEPOSIT" then
-
-    elseif p.head == "WITHDRAW" then
-
+    elseif p.head == "TRANSFER" then
+        transfer(s, p.name, p.recipiant, p.amount)
+    elseif p.head == "PRINT" then
+        --TODO: Return Transfer History
     end
 end
 
