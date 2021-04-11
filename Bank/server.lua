@@ -23,6 +23,9 @@ term.setCursorPos(1, 1)
 print("Bank Server v1.0")
 term.setTextColor(colors.lightGray)
 
+--Print Address
+log("Address", ecnet.address)
+
 --Function for Logging
 local log = function(head, str)
     logStr = "<" .. os.time() .. "> [" .. head .. "]: " .. str
