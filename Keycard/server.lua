@@ -21,9 +21,6 @@ term.setCursorPos(1, 1)
 print("Keycard Server v2.0")
 term.setTextColor(colors.lightGray)
 
---Print Address
-log("Address", ecnet.address)
-
 --Function for Logging
 local log = function(head, str)
     logStr = "<" .. os.time() .. "> [" .. head .. "]: " .. str
@@ -43,6 +40,9 @@ log("Init", "Importing AuthDB")
 local dbFile = fs.open(".authDB", "r")
 local db = textutils.unserialize(dbFile.readAll())
 dbFile.close()
+
+--Print Address
+log("Address", ecnet.address)
 
 -- ================================
 -- Authentication Functions

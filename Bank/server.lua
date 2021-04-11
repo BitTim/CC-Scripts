@@ -23,9 +23,6 @@ term.setCursorPos(1, 1)
 print("Bank Server v1.0")
 term.setTextColor(colors.lightGray)
 
---Print Address
-log("Address", ecnet.address)
-
 --Function for Logging
 local log = function(head, str)
     logStr = "<" .. os.time() .. "> [" .. head .. "]: " .. str
@@ -65,6 +62,9 @@ log("Init", "Importing encryption key")
 local keyFile = fs.open(".key", "r")
 local key = textutils.unserialize(keyFile.readAll())
 keyFile.close()
+
+--Print Address
+log("Address", ecnet.address)
 
 -- ================================
 -- Authentication Functions
