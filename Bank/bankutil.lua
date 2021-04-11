@@ -7,22 +7,19 @@ print("Bank Util v1.0")
 
 --Create BankDB if not existing
 if not fs.exists(".bankDB") then
-    log("Init", "Creating BankDB")
-    local bdbFile = fs.open(".bankDB", "w")
+    local dbFile = fs.open(".bankDB", "w")
     dbFile.write("{ }")
     dbFile.close()
 end
 
 --Import BankDB
-log("Init", "Importing BankDB")
 local dbFile = fs.open(".bankDB", "r")
-local db = textutils.unserialize(bdbFile.readAll())
+local db = textutils.unserialize(dbFile.readAll())
 dbFile.close()
 
 --Import Encryption Key
-log("Init", "Importing encryption key")
 local keyFile = fs.open(".key", "r")
-local key = textutils.unserialize(keyFile.readAll())
+local key = keyFile.readAll()
 keyFile.close()
 
 -- ================================
@@ -47,7 +44,7 @@ local balance = function(args)
     end
 
     --Print balance
-    print("Balance of " .. args[2] .. ": " .. textutils.serialize(aeslua.decrypt(key, db[args[2]].bal)))
+    print("Balance of " .. args[2] .. ": " .. aeslua.decrypt(key, db[args[2]].bal))
 end
 
 --Function to register new users
@@ -77,7 +74,7 @@ local register = function(args)
     end
 
     --Insert user into AuthDB
-    db[args[2]] = {hash = sha.sha256(args[3]), id = args[4], bal = 0, transfers = {}}
+    db[args[2]] = {hash = sha.sha256(args[3]), id = args[4], bal = aeslua.encrypt(key, "0"), transfers = {}}
     print("Adding new user: " .. args[2] .. " -> " .. textutils.serialize(db[args[2]]))
 
     --Save AuthDB file
@@ -131,10 +128,10 @@ local add = function(args)
     end
 
     local bal = tonumber(aeslua.decrypt(key, db[args[2]].bal))
-    bal += amount
+    bal = bal + tonumber(args[3])
     if bal < 0 then bal = 0 end
 
-    db[args[2]].bal = tostring(aeslua.encrypt(key, bal))
+    db[args[2]].bal = aeslua.encrypt(key, tostring(bal))
 
     --Save AuthDB file
     local dbFile = fs.open(".bankDB", "w")
@@ -160,10 +157,10 @@ local take = function(args)
     end
 
     local bal = tonumber(aeslua.decrypt(key, db[args[2]].bal))
-    bal -= amount
+    bal = bal - tonumber(args[3])
     if bal < 0 then bal = 0 end
 
-    db[args[2]].bal = tostring(aeslua.encrypt(key, bal))
+    db[args[2]].bal = aeslua.encrypt(key, tostring(bal))
 
     --Save AuthDB file
     local dbFile = fs.open(".bankDB", "w")
@@ -178,7 +175,7 @@ end
 while true do
     --Get Input
     term.setTextColor(colors.yellow)
-    term.write("Auth> ")
+    term.write("Bank> ")
     term.setTextColor(colors.white)
     local cmd = read()
     term.setTextColor(colors.lightGray)
@@ -197,7 +194,7 @@ while true do
         shell.run("clear")
     elseif tokens[1] == "list" then
         list(tokens)
-    elseif tokens[1] == "list" then
+    elseif tokens[1] == "balance" then
         balance(tokens)
     elseif tokens[1] == "register" then
         register(tokens)

@@ -29,20 +29,6 @@ local log = function(head, str)
     print(logStr)
 end
 
---Create AuthDB if not existing
-if not fs.exists(".authDB") then
-    log("Init", "Creating AuthDB")
-    local adbFile = fs.open(".authDB", "w")
-    adbFile.write("{ }")
-    adbFile.close()
-end
-
---Import AuthDB
-log("Init", "Importing AuthDB")
-local adbFile = fs.open(".authDB", "r")
-local adb = textutils.unserialize(adbFile.readAll())
-adbFile.close()
-
 --Create BankDB if not existing
 if not fs.exists(".bankDB") then
     log("Init", "Creating BankDB")
@@ -60,7 +46,7 @@ bdbFile.close()
 --Import Encryption Key
 log("Init", "Importing encryption key")
 local keyFile = fs.open(".key", "r")
-local key = textutils.unserialize(keyFile.readAll())
+local key = keyFile.readAll()
 keyFile.close()
 
 --Print Address
@@ -72,13 +58,13 @@ log("Address", ecnet.address)
 
 --Function for checking Name
 local authName = function(name)
-    if adb[name] == nil then return false end
+    if bdb[name] == nil then return false end
     return true
 end
 
 --Function for checking Hash
 local authHash = function(name, hash)
-    if adb[name].hash ~= hash then return false end
+    if bdb[name].hash ~= hash then return false end
     return true
 end
 
@@ -142,11 +128,12 @@ local balance = function(s, name)
     sModem.connect(s, 3)
     sModem.send(s.reply)
 
-    log("Balance", "Sent balance of " .. name .. " (" .. bal .. "€) to " .. s)
+    log("Balance", "Sent balance of " .. name .. " (" .. bal .. "?) to " .. s)
 end
 
 local transfer = function(s, name, recipiant, amount)
-    log("Transfer", "Transferring " .. amount .. "€ from " .. name .. " to " .. recipiant)
+    log("Transfer", "Transferring " .. amount .. "? from " .. name .. " to " .. recipiant)
+    amount = tonumber(amount)
 
     --Check if user has anough money
     local bal = tonumber(aeslua.decrypt(key, bdb[name].bal))
@@ -195,8 +182,8 @@ local transfer = function(s, name, recipiant, amount)
     log("Transfer", "Added " .. amount .. " to recipiants balance")
 
     --Remove amount from sender
-    bal -= amount
-    bdb[name].bal = aeslua.encrypt(key, bal)
+    bal = bal - amount
+    bdb[name].bal = aeslua.encrypt(key, tostring(bal))
     log("Transfer", "Removed " .. amount .. " from senders balance")
 
     --Create reply packet
@@ -213,6 +200,7 @@ local transfer = function(s, name, recipiant, amount)
     log("Transfer", "Written transfer log")
 
     --Save db file
+    if fs.exists(".bankDB.bak") then fs.delete(".bankDB.bak") end
     fs.move(".bankDB", ".bankDB.bak")
     local bdbFile = fs.open(".bankDB", "w")
     bdbFile.write(textutils.serialize(bdb))

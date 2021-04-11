@@ -2,10 +2,10 @@ os.loadAPI("api/sha")
 
 --Create Secure Modem
 local ecnet = require("api/ecnet")
-local modem = peripheral.find("modem")
+local modem = peripheral.wrap("front")
 local sModem = ecnet.wrap(modem)
 
-local dns = "c762:b905:a388:cbb6:f317"
+local dns = "687c:beb9:d3f2:12c5:0704"
 local title = "BitBank"
 local titleColor = colors.red
 local tallMode = false
@@ -154,12 +154,14 @@ local balance = function(name)
     term.setCursorPos(1, 8)
     term.setTextColor(colors.red)
 
+    --FIXME: Results in "Unknown Error" every time
+
     local reply = sendPacketForReply(serverAddress, msg, "BAL")
     if reply == -1 then
         print(centerText("Unknown Error", 15))
         sleep(2)
     else
-        print(centerText(reply.balance .. " €", 15))
+        print(centerText(reply.balance .. " ?", 15))
         sleep(2)
     end
 
@@ -181,6 +183,8 @@ local transfer = function(name, recipiant, amount)
         sleep(2)
         return
     end
+
+    --FIXME: Results in "Unknown Error" every time
 
     if reply.state == "FAIL" then
         print(centerText(causeStrings[reply.cause], 15))
@@ -225,8 +229,10 @@ local UI_invalidDisk = function()
 end
 
 local UI_drawNumberInput = function(x, y, outputString, title)
+    if x == 0 and y == 0 then term.clear() end
     term.setCursorPos(x, y)
 
+    --FIXME: Title Textnot siplayed correctly
     write(" +-----------+")
     write(centerText(title, 15) .. "\n")
     write(" |")
@@ -259,7 +265,7 @@ local UI_numberInput = function(dx, dy, hide, digits, title)
 
     while true do
         local outputString = ""
-        for i = 1, string.len(output), 1 do outputString = outputString..(showInput and string.sub(output, i, i) or "*") end
+        for i = 1, string.len(output), 1 do outputString = outputString..(not showInput and string.sub(output, i, i) or "*") end
         for i = 1, digits - string.len(output) do outputString = outputString.."_" end
         if digits % 2 == 0 then outputString = string.sub(outputString, 1, digits / 2).." "..string.sub(outputString, digits / 2 + 1, 6) end
         
@@ -267,6 +273,7 @@ local UI_numberInput = function(dx, dy, hide, digits, title)
 
         e, side, x, y = os.pullEvent("monitor_touch")
         
+        --FIXME: Input events shifted down by 2
         if     (x >= 3  + dx and x <= 13 + dx) and y == 4 + dy then showInput = not showInput
         elseif (x >= 3  + dx and x <= 5  + dx) and y == 6 + dy then output = output.."1"
         elseif (x >= 7  + dx and x <= 9  + dx) and y == 6 + dy then output = output.."2"
@@ -291,41 +298,43 @@ end
 local UI_cancelled = function()
     UI_base()
 
-    term.SetCursorPos(1, 8)
+    term.setCursorPos(1, 8)
     term.setTextColor(colors.red)
 
     term.write(centerText("Cancelled", 15))
+    sleep(2)
 end
 
 local UI_drawActions = function(x, y, name)
-    term.SetCursorPos(x, y + 1)
+    term.clear()
+    term.setCursorPos(x, y + 1)
     
-    term.SetTextColor(titleColor)
+    term.setTextColor(titleColor)
     term.write(centerText(name, 15))
-    term.SetTextColor(colors.white)
+    term.setTextColor(colors.white)
     
-    term.SetCursorPos(x, y + 3)
+    term.setCursorPos(x, y + 3)
     
-    term.SetBackgroundColor(colors.gray)
-    term.write(centerText(" Balance     "))
+    term.setBackgroundColor(colors.gray)
+    term.write(centerText(" Balance     ", 15))
     term.setBackgroundColor(colors.black)
     
-    term.SetCursorPos(x, y + 5)
+    term.setCursorPos(x, y + 5)
     
-    term.SetBackgroundColor(colors.gray)
-    term.write(centerText(" Transfer    "))
+    term.setBackgroundColor(colors.gray)
+    term.write(centerText(" Transfer    ", 15))
     term.setBackgroundColor(colors.black)
     
-    term.SetCursorPos(x, y + 7)
+    term.setCursorPos(x, y + 7)
     
-    term.SetBackgroundColor(colors.gray)
-    term.write(centerText(" Print log   "))
+    term.setBackgroundColor(colors.gray)
+    term.write(centerText(" Print log   ", 15))
     term.setBackgroundColor(colors.black)
     
-    term.SetCursorPos(x, y + 9)
+    term.setCursorPos(x, y + 9)
     
-    term.SetBackgroundColor(colors.red)
-    term.write(centerText(" Quit        "))
+    term.setBackgroundColor(colors.red)
+    term.write(centerText(" Quit        ", 15))
     term.setBackgroundColor(colors.black)
 end
 
@@ -344,30 +353,33 @@ local UI_actions = function(dx, dy, name)
 end
 
 local UI_transfer = function(name)
-    local recipiant = UI_numberInput(0, yOff, true, 6, "Recipiant")
+    local recipiant = UI_numberInput(0, 0, false, 6, "Recipiant")
     if recipiant == 1 then
         UI_cancelled()
         return -1
     end
 
-    local amount = UI_numberInput(0, yOff, true, 6, "Amount")
+    local amount = UI_numberInput(0, 0, false, 6, "Amount")
     if amount == 1 then
         UI_cancelled()
         return -1
     end
 
     transfer(name, recipiant, amount)
-    return 0
 end
 
 local UI_print = function()
     UI_base()
 
-    term.SetCursorPos(1, 8)
+    term.setCursorPos(1, 8)
     term.setTextColor(colors.blue)
 
     term.write(centerText("Coming Soon", 15))
     sleep(2)
+end
+
+local UI_quit = function()
+    --FIXME: UI_quit() UI
 end
 
 -- ================================
@@ -387,7 +399,9 @@ while run do
     UI_insertCard()
 
     --Wait, if no disk is inserted
-    while not fs.exists("disk") do end   
+    while not fs.exists("disk") do
+        sleep(0.1)
+    end   
 
     repeat
         local name = UI_checkDisk()
@@ -415,12 +429,12 @@ while run do
         --Ask for actions
         local quit = false
         while not quit do
-            local action = UI_actions()
+            local action = UI_actions(0, 0, name)
             
             if action == "balance" then
                 balance(name)
             elseif action == "transfer" then
-                UI_transfer()
+                UI_transfer(name)
             elseif action == "print" then
                 UI_print()
             elseif action == "quit" then
