@@ -6,27 +6,28 @@ local modem = peripheral.find("modem")
 local sModem = ecnet.wrap(modem)
 
 local dns = "c762:b905:a388:cbb6:f317"
-local doorConnection = "back"
-local btnConnection = "back"
-local title = "Andrej"
-local titleColor = colors.blue
-local access = "1"
+local title = "BitBank"
+local titleColor = colors.red
+local tallMode = false
 
-local serverDomain = "andrej.key"
+local serverDomain = "bitbank.bit"
 local serverAddress = ""
-local versionString = "v2.0"
+local versionString = "v1.0"
 
 local causeStrings = {
     NAME = "Invalid user",
-    HASH = "Wrong PIN",
-    ACCESS = "No Access"
+    HASH = "Wrong output",
+    BALANCE = "Balance too low",
+    STOCK = "Not enough in ATM",
+    RECEPIANT = "Invalid recipiant",
+    AMOUNT = "Invalid Amount"
 }
 
 --Init Shell
 term.clear()
 term.setCursorPos(1, 1)
 term.setTextColor(colors.yellow)
-print("Keycard Reader " .. versionString)
+print("ATM " .. versionString)
 
 local mon = peripheral.find("monitor")
 mon.setTextScale(0.5)
@@ -100,21 +101,14 @@ local UI_base = function()
     term.clear()
     term.setCursorPos(1, 3)
 
-    term.setTextColor(colors.lightGray)
-    print(centerText("BitSecure", 15))
-    print(centerText("Keycard " .. versionString, 15))
-    print("")
-
     term.setTextColor(titleColor)
     print(centerText(title, 15))
 
+    term.setTextColor(colors.lightGray)
+    print(centerText("Version " .. versionString, 15))
+
     term.setTextColor(colors.gray)
     print("---------------")
-end
-
---Control door
-local door = function(state)
-    redstone.setOutput(doorConnection, state)
 end
 
 local ejectDisk = function()
@@ -123,10 +117,10 @@ local ejectDisk = function()
 end
 
 --Authenticate
-local auth = function(name, pin, access)
+local auth = function(name, pin)
     local hash = sha.sha256(pin)
 
-    local p = {head = "AUTH", name = name, hash = hash, access = access}
+    local p = {head = "AUTH", name = name, hash = hash}
     local msg = textutils.serialize(p)
 
     UI_base()
@@ -147,6 +141,7 @@ local auth = function(name, pin, access)
     elseif reply.state == "SUCCESS" then
         term.setTextColor(colors.green)
         print(centerText("Welcome!", 15))
+        sleep(1)
         return true
     end
 end
@@ -159,7 +154,7 @@ local UI_insertCard = function()
     UI_base()
     term.setCursorPos(1, 8)
     term.setTextColor(colors.white)
-    print("  Insert Card  ")
+    print(centerText("Insert Card", 15))
 end
 
 local UI_checkDisk = function()
@@ -178,20 +173,16 @@ local UI_invalidDisk = function()
     UI_base()
     term.setCursorPos(1, 8)
     term.setTextColor(colors.red)
-    print(centerText("Invalid Keycard", 15))
+    print(centerText("Invalid card", 15))
 end
 
-local UI_drawPINField = function(pinString)
-    term.clear()
-    term.setCursorPos(1, 1)
-    
-    write(" Please enter  \n")
-    write("   PIN Code    \n")
+local UI_drawNumberInput = function(x, y, outputString)
+    term.setCursorPos(x, y)
+
     write(" +-----------+ \n")
-    
     write(" |")
     term.setBackgroundColor(colors.gray)
-    write("  "..pinString.."  ")
+    write("  "..outputString.."  ")
     term.setBackgroundColor(colors.black)
     write("| \n")
     
@@ -213,45 +204,84 @@ local UI_drawPINField = function(pinString)
     write(" +-----------+")    
 end
 
-local UI_pinCode = function(name)
-    local pin = ""
-    local showPin = false
+local UI_numberInput = function(dx, dy, hide)
+    local output = ""
+    local showInput = hide
 
     while true do
-        local pinString = ""
-        for i = 1, string.len(pin), 1 do pinString = pinString..(showPin and string.sub(pin, i, i) or "*") end
-        for i = 1, 6 - string.len(pin) do pinString = pinString.."_" end
-        pinString = string.sub(pinString, 1, 3).." "..string.sub(pinString, 4, 6)
+        local outputString = ""
+        for i = 1, string.len(output), 1 do outputString = outputString..(showInput and string.sub(output, i, i) or "*") end
+        for i = 1, 6 - string.len(output) do outputString = outputString.."_" end
+        outputString = string.sub(outputString, 1, 3).." "..string.sub(outputString, 4, 6)
         
-        UI_drawPINField(pinString)
+        UI_drawNumberInput(dx, dy, outputString)
 
         e, side, x, y = os.pullEvent("monitor_touch")
         
-        if     (x >= 3  and x <= 13) and y == 4 then showPin = not showPin
-        elseif (x >= 3  and x <= 5 ) and y == 6 then pin = pin.."1"
-        elseif (x >= 7  and x <= 9 ) and y == 6 then pin = pin.."2"
-        elseif (x >= 11 and x <= 13) and y == 6 then pin = pin.."3"
-        elseif (x >= 3  and x <= 5 ) and y == 7 then pin = pin.."4"
-        elseif (x >= 7  and x <= 9 ) and y == 7 then pin = pin.."5"
-        elseif (x >= 11 and x <= 13) and y == 7 then pin = pin.."6"
-        elseif (x >= 3  and x <= 5 ) and y == 8 then pin = pin.."7"
-        elseif (x >= 7  and x <= 9 ) and y == 8 then pin = pin.."8"
-        elseif (x >= 11 and x <= 13) and y == 8 then pin = pin.."9"
-        elseif (x >= 3  and x <= 5 ) and y == 9 then return 1
-        elseif (x >= 7  and x <= 9 ) and y == 9 then pin = pin.."0"
-        elseif (x >= 11 and x <= 13) and y == 9 then pin = string.sub(pin, 1, string.len(pin) - 1)
+        if     (x >= 3  + dx and x <= 13 + dx) and y == 4 + dy then showInput = not showInput
+        elseif (x >= 3  + dx and x <= 5  + dx) and y == 6 + dy then output = output.."1"
+        elseif (x >= 7  + dx and x <= 9  + dx) and y == 6 + dy then output = output.."2"
+        elseif (x >= 11 + dx and x <= 13 + dx) and y == 6 + dy then output = output.."3"
+        elseif (x >= 3  + dx and x <= 5  + dx) and y == 7 + dy then output = output.."4"
+        elseif (x >= 7  + dx and x <= 9  + dx) and y == 7 + dy then output = output.."5"
+        elseif (x >= 11 + dx and x <= 13 + dx) and y == 7 + dy then output = output.."6"
+        elseif (x >= 3  + dx and x <= 5  + dx) and y == 8 + dy then output = output.."7"
+        elseif (x >= 7  + dx and x <= 9  + dx) and y == 8 + dy then output = output.."8"
+        elseif (x >= 11 + dx and x <= 13 + dx) and y == 8 + dy then output = output.."9"
+        elseif (x >= 3  + dx and x <= 5  + dx) and y == 9 + dy then return 1
+        elseif (x >= 7  + dx and x <= 9  + dx) and y == 9 + dy then output = output.."0"
+        elseif (x >= 11 + dx and x <= 13 + dx) and y == 9 + dy then output = string.sub(output, 1, string.len(output) - 1)
         end
         
-        if string.len(pin) == 6 then break end
+        if string.len(output) == 6 then break end
     end
 
-    local authResult = auth(name, pin, access)
-    ejectDisk()
+    return output
+end
 
-    if authResult then
-        door(true)
-        sleep(4)
-        door(false)
+UI_drawActions = function(x, y, name)
+    term.SetCursorPos(x, y + 1)
+    
+    term.SetTextColor(titleColor)
+    term.write(centerText(name, 15))
+    term.SetTextColor(colors.white)
+    
+    term.SetCursorPos(x, y + 3)
+    
+    term.SetBackgroundColor(colors.gray)
+    term.write(centerText(" Balance     "))
+    term.setBackgroundColor(colors.black)
+    
+    term.SetCursorPos(x, y + 5)
+    
+    term.SetBackgroundColor(colors.gray)
+    term.write(centerText(" Transfer    "))
+    term.setBackgroundColor(colors.black)
+    
+    term.SetCursorPos(x, y + 7)
+    
+    term.SetBackgroundColor(colors.gray)
+    term.write(centerText(" Print log   "))
+    term.setBackgroundColor(colors.black)
+    
+    term.SetCursorPos(x, y + 9)
+    
+    term.SetBackgroundColor(colors.red)
+    term.write(centerText(" Quit        "))
+    term.setBackgroundColor(colors.black)
+end
+
+UI_actions = function(dx, dy, name)
+    while true do
+        UI_drawActions(dx, dy, name)
+        e, side, x, y = os.pullEvent("monitor_touch")
+        
+        if x >= 2 + dx and x <= 14 + dx then
+            if y == 3 + dy then return "balance" end
+            if y == 5 + dy then return "transfer" end
+            if y == 7 + dy then return "print" end
+            if y == 9 + dy then return "quit" end
+        end
     end
 end
 
@@ -261,21 +291,18 @@ end
 
 --Late Init
 local run = lookupServer()
+local yOff = 0
+
+if tallMode then
+    yOff = 10
+end
 
 --Main Loop
 while run do
     UI_insertCard()
 
-    --Listen for redstone, if no disk is inserted
-    while not fs.exists("disk") do
-        if redstone.getInput(btnConnection) == true then
-            door(true) 
-            sleep(4)
-        end
-
-        if redstone.getInput(btnConnection) == false then door(false) end
-        sleep(0.1)
-    end
+    --Wait, if no disk is inserted
+    while not fs.exists("disk") do end   
 
     repeat
         local name = UI_checkDisk()
@@ -287,10 +314,32 @@ while run do
             break
         end
         
-        local pinResult = UI_pinCode(name)
-        if pinResult == 1 then
+        --Authenticate user
+        if auth(name, UI_numberInput(0, yOff, true)) == false then
             ejectDisk()
+            break
         end
+        
+        --Ask for actions
+        local quit = false
+        while not quit do
+            local action = UI_actions()
+            
+            if     action == "balance" then
+                UI_balance()
+            elseif action == "transfer" then
+                UI_transfer()
+            elseif action == "print" then
+                UI_print()
+            elseif action == "quit" then
+                break
+            end
+        end
+        
+        --Return Card
+        UI_quit()
+        ejectDisk()
+        sleep(2)
     until true
 
     sleep(0.1)
