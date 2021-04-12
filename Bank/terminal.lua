@@ -16,10 +16,10 @@ local versionString = "v1.0"
 
 local causeStrings = {
     NAME = "Invalid user",
-    HASH = "Wrong output",
+    HASH = "Wrong PIN",
     BALANCE = "Balance too low",
     STOCK = "Not enough in ATM",
-    RECIPIANT = "Invalid recipiant"
+    RECIPIANT = "No recipiant"
 }
 
 --Init Shell
@@ -154,14 +154,16 @@ local balance = function(name)
     term.setCursorPos(1, 8)
     term.setTextColor(colors.red)
 
-    --FIXME: Results in "Unknown Error" every time
-
     local reply = sendPacketForReply(serverAddress, msg, "BAL")
     if reply == -1 then
         print(centerText("Unknown Error", 15))
         sleep(2)
     else
-        print(centerText(reply.balance .. " ?", 15))
+        term.setTextColor(colors.blue)
+        print(centerText(reply.balance .. "$", 15))
+        term.setTextColor(colors.white)
+        term.setCursorPos(1, 7)
+        print(centerText("Balance: ", 15))
         sleep(2)
     end
 
@@ -183,8 +185,6 @@ local transfer = function(name, recipiant, amount)
         sleep(2)
         return
     end
-
-    --FIXME: Results in "Unknown Error" every time
 
     if reply.state == "FAIL" then
         print(centerText(causeStrings[reply.cause], 15))
@@ -229,12 +229,14 @@ local UI_invalidDisk = function()
 end
 
 local UI_drawNumberInput = function(x, y, outputString, title)
-    if x == 0 and y == 0 then term.clear() end
+    if x == 1 and y == 1 then term.clear() end
     term.setCursorPos(x, y)
+    title = title .. "\n"
 
-    --FIXME: Title Textnot siplayed correctly
     write(" +-----------+")
-    write(centerText(title, 15) .. "\n")
+    term.setCursorPos(2 + (13 - string.len(title)) / 2, y)
+
+    write(title)
     write(" |")
     term.setBackgroundColor(colors.gray)
     write("  "..outputString.."  ")
@@ -273,7 +275,9 @@ local UI_numberInput = function(dx, dy, hide, digits, title)
 
         e, side, x, y = os.pullEvent("monitor_touch")
         
-        --FIXME: Input events shifted down by 2
+        dx = dx - 1
+        dy = dy - 3
+        
         if     (x >= 3  + dx and x <= 13 + dx) and y == 4 + dy then showInput = not showInput
         elseif (x >= 3  + dx and x <= 5  + dx) and y == 6 + dy then output = output.."1"
         elseif (x >= 7  + dx and x <= 9  + dx) and y == 6 + dy then output = output.."2"
@@ -288,6 +292,9 @@ local UI_numberInput = function(dx, dy, hide, digits, title)
         elseif (x >= 7  + dx and x <= 9  + dx) and y == 9 + dy then output = output.."0"
         elseif (x >= 11 + dx and x <= 13 + dx) and y == 9 + dy then output = string.sub(output, 1, string.len(output) - 1)
         end
+        
+        dy = dy + 3
+        dx = dx + 1
         
         if string.len(output) == digits then break end
     end
@@ -307,34 +314,34 @@ end
 
 local UI_drawActions = function(x, y, name)
     term.clear()
-    term.setCursorPos(x, y + 1)
+    term.setCursorPos(x, y)
     
     term.setTextColor(titleColor)
     term.write(centerText(name, 15))
     term.setTextColor(colors.white)
     
-    term.setCursorPos(x, y + 3)
+    term.setCursorPos(x + 1, y + 2)
     
     term.setBackgroundColor(colors.gray)
-    term.write(centerText(" Balance     ", 15))
+    term.write(centerText(" Balance    ", 15))
     term.setBackgroundColor(colors.black)
     
-    term.setCursorPos(x, y + 5)
+    term.setCursorPos(x + 1, y + 4)
     
     term.setBackgroundColor(colors.gray)
-    term.write(centerText(" Transfer    ", 15))
+    term.write(centerText(" Transfer   ", 15))
     term.setBackgroundColor(colors.black)
     
-    term.setCursorPos(x, y + 7)
+    term.setCursorPos(x + 1, y + 6)
     
     term.setBackgroundColor(colors.gray)
-    term.write(centerText(" Print log   ", 15))
+    term.write(centerText(" Print log  ", 15))
     term.setBackgroundColor(colors.black)
     
-    term.setCursorPos(x, y + 9)
+    term.setCursorPos(x + 1, y + 8)
     
     term.setBackgroundColor(colors.red)
-    term.write(centerText(" Quit        ", 15))
+    term.write(centerText(" Quit       ", 15))
     term.setBackgroundColor(colors.black)
 end
 
@@ -344,22 +351,28 @@ local UI_actions = function(dx, dy, name)
         e, side, x, y = os.pullEvent("monitor_touch")
         
         if x >= 2 + dx and x <= 14 + dx then
-            if y == 3 + dy then return "balance" end
-            if y == 5 + dy then return "transfer" end
-            if y == 7 + dy then return "print" end
-            if y == 9 + dy then return "quit" end
+            if y == 2 + dy then return "balance" end
+            if y == 4 + dy then return "transfer" end
+            if y == 6 + dy then return "print" end
+            if y == 8 + dy then return "quit" end
         end
     end
 end
 
 local UI_transfer = function(name)
-    local recipiant = UI_numberInput(0, 0, false, 6, "Recipiant")
+    term.clear()
+    term.setCursorPos(1, 1)
+    term.setTextColor(colors.red)
+    term.write(centerText("Transfer" ,15))
+    term.setTextColor(colors.white)
+
+    local recipiant = UI_numberInput(1, 3, false, 6, "Recipiant")
     if recipiant == 1 then
         UI_cancelled()
         return -1
     end
 
-    local amount = UI_numberInput(0, 0, false, 6, "Amount")
+    local amount = UI_numberInput(1, 3, false, 6, "Amount")
     if amount == 1 then
         UI_cancelled()
         return -1
@@ -379,7 +392,13 @@ local UI_print = function()
 end
 
 local UI_quit = function()
-    --FIXME: UI_quit() UI
+    UI_base()
+
+    term.setCursorPos(1, 8)
+    term.setTextColor(colors.blue)
+
+    term.write(centerText("Goodbye!", 15))
+    sleep(2)
 end
 
 -- ================================
@@ -388,10 +407,10 @@ end
 
 --Late Init
 local run = lookupServer()
-local yOff = 0
+local yOff = 2
 
 if tallMode then
-    yOff = 10
+    yOff = 11
 end
 
 --Main Loop
@@ -414,7 +433,7 @@ while run do
         end
         
         --Authenticate user
-        local pin = UI_numberInput(0, yOff, true, 6, "PIN")
+        local pin = UI_numberInput(1, yOff, true, 6, "PIN")
 
         if pin == 1 then
             ejectDisk()
@@ -429,7 +448,7 @@ while run do
         --Ask for actions
         local quit = false
         while not quit do
-            local action = UI_actions(0, 0, name)
+            local action = UI_actions(1, 1, name)
             
             if action == "balance" then
                 balance(name)
@@ -443,9 +462,8 @@ while run do
         end
         
         --Return Card
-        UI_quit()
         ejectDisk()
-        sleep(2)
+        UI_quit()
     until true
 
     sleep(0.1)

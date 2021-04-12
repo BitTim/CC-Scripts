@@ -64,6 +64,8 @@ end
 
 --Function for checking Hash
 local authHash = function(name, hash)
+    log("Auth", bdb[name].hash)
+    log("Auth", hash)
     if bdb[name].hash ~= hash then return false end
     return true
 end
@@ -126,13 +128,13 @@ local balance = function(s, name)
 
     --Send reply packet
     sModem.connect(s, 3)
-    sModem.send(s.reply)
+    sModem.send(s, reply)
 
-    log("Balance", "Sent balance of " .. name .. " (" .. bal .. "?) to " .. s)
+    log("Balance", "Sent balance of " .. name .. " (" .. bal .. "$) to " .. s)
 end
 
 local transfer = function(s, name, recipiant, amount)
-    log("Transfer", "Transferring " .. amount .. "? from " .. name .. " to " .. recipiant)
+    log("Transfer", "Transferring " .. amount .. "$ from " .. name .. " to " .. recipiant)
     amount = tonumber(amount)
 
     --Check if user has anough money
@@ -148,6 +150,7 @@ local transfer = function(s, name, recipiant, amount)
         --Send reply packet
         sModem.connect(s, 3)
         sModem.send(s, reply)
+        return
     end
 
     --Find Recipiant name
@@ -166,12 +169,13 @@ local transfer = function(s, name, recipiant, amount)
         log("Transfer", "Recipiant " .. recipiant .. " not found")
 
         --Create reply packet
-        local p = {head = "AUTH", state = "FAIL", cause = "RECIPIANT"}
+        local p = {head = "TRANSFER", state = "FAIL", cause = "RECIPIANT"}
         local reply = textutils.serialize(p)
         
         --Send reply packet
         sModem.connect(s, 3)
         sModem.send(s, reply)
+        return
     end
 
     log("Transfer", "Recipiant is: " .. target)
@@ -179,15 +183,15 @@ local transfer = function(s, name, recipiant, amount)
     --Add amount to targets balance
     local targetBal = tostring(tonumber(aeslua.decrypt(key, bdb[target].bal)) + amount)
     bdb[target].bal = aeslua.encrypt(key, targetBal)
-    log("Transfer", "Added " .. amount .. " to recipiants balance")
+    log("Transfer", "Added " .. amount .. "$ to recipiants balance")
 
     --Remove amount from sender
     bal = bal - amount
     bdb[name].bal = aeslua.encrypt(key, tostring(bal))
-    log("Transfer", "Removed " .. amount .. " from senders balance")
+    log("Transfer", "Removed " .. amount .. "$ from senders balance")
 
     --Create reply packet
-    local p = {head = "AUTH", state = "SUCCESS"}
+    local p = {head = "TRANSFER", state = "SUCCESS"}
     local reply = textutils.serialize(p)
         
     --Send reply packet
