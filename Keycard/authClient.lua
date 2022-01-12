@@ -149,6 +149,35 @@ local auth = function(name, pin, access)
     end
 end
 
+--Change PIN
+local changePIN = function(name, pin)
+    local hash = sha.sha256(pin)
+
+    local p = {head = "CHGPIN", name = name, hash = hash}
+    local msg = textutils.serialize(p)
+
+    UI_base()
+    term.setCursorPos(1, 8)
+    term.setTextColor(colors.red)
+
+    local reply = sendPacketForReply(serverAddress, msg, "CHGPIN")
+    if reply == -1 then
+        print(centerText("Unknown Error", 15))
+        sleep(2)
+        return
+    end
+
+    if reply.state == "FAIL" then
+        print(centerText(causeStrings[reply.cause], 15))
+        sleep(2)
+        return false
+    elseif reply.state == "SUCCESS" then
+        term.setTextColor(colors.green)
+        print(centerText("Success!", 15))
+        return true
+    end
+end
+
 -- ================================
 -- UI
 -- ================================
@@ -184,34 +213,50 @@ local UI_drawPINField = function(pinString, uiPINPrefixString = "")
     term.setCursorPos(1, 1)
     
     write(" Please enter  \n")
-    write(centerText(uiPINPrefixString + "PIN Code", 15) + "\n"))
-    write(" +-----------+ \n")
+    write(centerText(uiPINPrefixString.."PIN Code", 15).."\n"))
+    write("               \n")
     
-    write(" |")
+    write("  ")
     term.setBackgroundColor(colors.gray)
     write("  "..pinString.."  ")
     term.setBackgroundColor(colors.black)
-    write("| \n")
+    write("  \n")
     
-    write(" +-----------+ \n")
-    write(" | 1 | 2 | 3 | \n")
-    write(" | 4 | 5 | 6 | \n")
-    write(" | 7 | 8 | 9 | \n")
+    write("               \n")
+    write("   1   2   3   \n")
+    write("   4   5   6   \n")
+    write("   7   8   9   \n")
     
-    write(" |")
+    write("  ")
     term.setBackgroundColor(colors.red)
     write(" X ")
     term.setBackgroundColor(colors.black)
-    write("| 0 |")
+    write("  0  ")
     term.setBackgroundColor(colors.yellow)
     write(" C ")
     term.setBackgroundColor(colors.black)
-    write("| \n")
-    
-    write(" +-----------+")    
+    write("  \n")     
 end
 
-local UI_pinCode = function(name)
+local UI_drawMenu = function(name)
+    term.clear()
+    term.setCursorPos(1, 1)
+
+    write(centerText("Welcome", 15).."\n")
+    write(centerText(name, 15).."\n")
+
+    term.setCursorPos(2, 4)
+    term.setBackgroundColor(colors.gray)
+    write(" Change PIN  ")
+    term.setBackgroundColor(colors.black)
+    
+    term.setCursorPos(2, 6)
+    term.setBackgroundColor(colors.gray)
+    write(" Exit        ")
+    term.setBackgroundColor(colors.black)
+end
+
+local UI_pinCode = function(uiPINPrefixString = "")
     local pin = ""
     local showPin = false
 
@@ -221,7 +266,7 @@ local UI_pinCode = function(name)
         for i = 1, 6 - string.len(pin) do pinString = pinString.."_" end
         pinString = string.sub(pinString, 1, 3).." "..string.sub(pinString, 4, 6)
         
-        UI_drawPINField(pinString)
+        UI_drawPINField(pinString, uiPINPrefixString)
 
         e, side, x, y = os.pullEvent("monitor_touch")
         
@@ -235,7 +280,7 @@ local UI_pinCode = function(name)
         elseif (x >= 3  and x <= 5 ) and y == 8 then pin = pin.."7"
         elseif (x >= 7  and x <= 9 ) and y == 8 then pin = pin.."8"
         elseif (x >= 11 and x <= 13) and y == 8 then pin = pin.."9"
-        elseif (x >= 3  and x <= 5 ) and y == 9 then return 1
+        elseif (x >= 3  and x <= 5 ) and y == 9 then return "exit"
         elseif (x >= 7  and x <= 9 ) and y == 9 then pin = pin.."0"
         elseif (x >= 11 and x <= 13) and y == 9 then pin = string.sub(pin, 1, string.len(pin) - 1)
         end
@@ -243,9 +288,24 @@ local UI_pinCode = function(name)
         if string.len(pin) == 6 then break end
     end
 
-    -- Don't auto authenticate since pin entry will be needed to set new pin
+    return pin
+end
 
-    local authResult = auth(name, pin, access)
+local UI_menu = function(name)
+    UI_drawMenu(name)
+
+    while true do
+        e, side, x, y = os.pullEvent("monitor_touch")
+
+        if x >= 2 and x <= 14 then
+            if y == 4 then
+                local pin = UI_pinCode("new ")
+                changePIN(name, pin)
+            elseif y == 6 then
+                return "exit"
+            end 
+        end
+    end
 end
 
 -- ================================
@@ -270,14 +330,21 @@ while run do
         end
         
         local pinResult = UI_pinCode(name)
-        
-        -- Selector UI with following options:
-        -- -----------------------------------
-        --  - Change PIN
-        --  - Done
-        
-        if pinResult == 1 then
+        if pinResult == "exit" then
             ejectDisk()
+        else
+            local authResult = auth(name, pin, access)
+
+            if authResult then
+                while true do
+                    local menuResult = UI_menu(name)
+
+                    if menuResult == "exit" then
+                        ejectDisk()
+                        break
+                    end
+                end
+            end
         end
     until true
 

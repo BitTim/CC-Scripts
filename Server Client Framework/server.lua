@@ -11,7 +11,7 @@ local version = "v1.0"
 term.setTextColor(colors.yellow)
 term.clear()
 term.setCursorPos(1, 1)
-print(title + " " + version)
+print(title.." "..version)
 
 --Route Output to Monitor
 local mon = peripheral.find("monitor")
@@ -23,7 +23,7 @@ term.setTextColor(colors.yellow)
 term.clear()
 term.setCursorPos(1, 1)
 print(
-print(title + " " + version)
+print(title.." "..version)
 term.setTextColor(colors.lightGray)
 
 --Function for Logging

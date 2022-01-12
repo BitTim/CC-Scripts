@@ -3,11 +3,15 @@ local ecnet = require("api/ecnet")
 local modem = peripheral.find("modem")
 local sModem = ecnet.wrap(modem)
 
+--Create Variables
+local title = "Keycard Server"
+local version = "v2.1"
+
 --Set title of shell
 term.setTextColor(colors.yellow)
 term.clear()
 term.setCursorPos(1, 1)
-print("Keycard Server v2.0")
+print(title.." "..version)
 
 --Route Output to Monitor
 local mon = peripheral.find("monitor")
@@ -18,7 +22,8 @@ term.redirect(mon)
 term.setTextColor(colors.yellow)
 term.clear()
 term.setCursorPos(1, 1)
-print("Keycard Server v2.0")
+print(
+print(title.." "..version)
 term.setTextColor(colors.lightGray)
 
 --Function for Logging
@@ -66,53 +71,76 @@ local authAccess = function(name, access)
     return true
 end
 
+--Function for saving Database
+local saveAuthDB = function()
+    local dbFile = fs.open(".authDB", "w")
+    dbFile.write(db)
+    dbFile.close()
+end
+
+-- ===============================
+-- Server Functions
+-- ===============================
+
 --Function for sending Fail packet
-local authFail = function(s, cause)
+local responseFail = function(s, head, cause)
     --Create reply packet
-    local p = {head = "AUTH", state = "FAIL", cause = cause}
+    local p = {head = head, state = "FAIL", cause = cause}
     local reply = textutils.serialize(p)
         
     --Send reply packet
     sModem.connect(s, 3)
     sModem.send(s, reply)
 
-    log("Auth", "Denied " .. s .. " with cause: " .. cause)
+    log("Response", "Failed " .. head .. s .. " with cause: " .. cause)
 end
 
 --Function for sending success packet
-local authSuccess = function(s)
+local responseSuccess = function(s, head)
     --Create reply packet
-    local p = {head = "AUTH", state = "SUCCESS"}
+    local p = {head = head, state = "SUCCESS"}
     local reply = textutils.serialize(p)
         
     --Send reply packet
     sModem.connect(s, 3)
     sModem.send(s, reply)
 
-    log("Auth", "Granted " .. s)
+    log("Response", "Success " .. head .. s)
 end
 
 --Function for authentication
 local auth = function(s, name, hash, access)
     if not authName(name) then
         log("Auth", "Name not found")
-        authFail(s, "NAME")
+        responseFail(s, "AUTH", "NAME")
         return
     end
     
     if not authHash(name, hash) then
         log("Auth", "Hashes don't match")
-        authFail(s, "HASH")
+        responseFail(s, "AUTH", "HASH")
         return
     end
     
     if not authAccess(name, access) then
         log("Auth", "No access to client area")
-        authFail(s, "ACCESS")
+        responseFail(s, "AUTH", "ACCESS")
         return
     end
 
-    authSuccess(s)
+    responseSuccess(s, "AUTH")
+end
+
+--Function for changing PIN of user
+local changePIN = function(s, name, hash)
+    if not authName(name) then
+        log("Auth", "Name not found")
+        responseFail(s, "CHGPIN", "NAME")
+        return
+    end
+
+    db[name].hash = hash
+    responseSuccess(s, "CHGPIN")
 end
 
 -- ================================
@@ -130,6 +158,8 @@ while true do
     --Check Packet header
     if p.head == "AUTH" then
         auth(s, p.name, p.hash, p.access)
+    elseif p.head == "CHGPIN" then
+        changePIN(s, p.name, p.hash)
     end
 end
 
