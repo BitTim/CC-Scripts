@@ -3,11 +3,15 @@ local ecnet = require("api/ecnet")
 local modem = peripheral.find("modem")
 local sModem = ecnet.wrap(modem)
 
+--Create Variables
+local title = "Server"
+local version = "v1.0"
+
 --Set title of shell
 term.setTextColor(colors.yellow)
 term.clear()
 term.setCursorPos(1, 1)
-print("Server v1.0")
+print(title + " " + version)
 
 --Route Output to Monitor
 local mon = peripheral.find("monitor")
@@ -18,7 +22,8 @@ term.redirect(mon)
 term.setTextColor(colors.yellow)
 term.clear()
 term.setCursorPos(1, 1)
-print("Server v1.0")
+print(
+print(title + " " + version)
 term.setTextColor(colors.lightGray)
 
 --Function for Logging
@@ -44,5 +49,3 @@ while true do
         
     end
 end
-
-
