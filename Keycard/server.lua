@@ -22,7 +22,6 @@ term.redirect(mon)
 term.setTextColor(colors.yellow)
 term.clear()
 term.setCursorPos(1, 1)
-print(
 print(title.." "..version)
 term.setTextColor(colors.lightGray)
 
@@ -74,7 +73,7 @@ end
 --Function for saving Database
 local saveAuthDB = function()
     local dbFile = fs.open(".authDB", "w")
-    dbFile.write(db)
+    dbFile.write(textutils.serialize(db))
     dbFile.close()
 end
 
@@ -92,7 +91,7 @@ local responseFail = function(s, head, cause)
     sModem.connect(s, 3)
     sModem.send(s, reply)
 
-    log("Response", "Failed " .. head .. s .. " with cause: " .. cause)
+    log("Response", "Failed " .. head .. " " .. s .. " with cause: " .. cause)
 end
 
 --Function for sending success packet
@@ -105,7 +104,7 @@ local responseSuccess = function(s, head)
     sModem.connect(s, 3)
     sModem.send(s, reply)
 
-    log("Response", "Success " .. head .. s)
+    log("Response", "Success " .. head .. " " .. s)
 end
 
 --Function for authentication
@@ -140,6 +139,7 @@ local changePIN = function(s, name, hash)
     end
 
     db[name].hash = hash
+    saveAuthDB()
     responseSuccess(s, "CHGPIN")
 end
 

@@ -2,13 +2,12 @@ os.loadAPI("api/sha")
 
 --Create Secure Modem
 local ecnet = require("api/ecnet")
-local modem = peripheral.find("modem")
+local modem = peripheral.wrap("front")
 local sModem = ecnet.wrap(modem)
 
-local dns = "c762:b905:a388:cbb6:f317"
-local title = "Keycard"
+local dns = "b333:6bd3:19fc:76e7:48c3"
+local title = "Auth Terminal"
 local titleColor = colors.yellow
-local access = "1"
 
 local serverDomain = "keycard.key"
 local serverAddress = ""
@@ -110,11 +109,7 @@ local UI_base = function()
     print("---------------")
 end
 
---Control door
-local door = function(state)
-    redstone.setOutput(doorConnection, state)
-end
-
+--Eject Disk
 local ejectDisk = function()
     local drive = peripheral.find("drive")
     drive.ejectDisk()
@@ -145,6 +140,7 @@ local auth = function(name, pin, access)
     elseif reply.state == "SUCCESS" then
         term.setTextColor(colors.green)
         print(centerText("Welcome!", 15))
+        sleep(1)
         return true
     end
 end
@@ -174,6 +170,7 @@ local changePIN = function(name, pin)
     elseif reply.state == "SUCCESS" then
         term.setTextColor(colors.green)
         print(centerText("Success!", 15))
+        sleep(2)
         return true
     end
 end
@@ -208,12 +205,14 @@ local UI_invalidDisk = function()
     print(centerText("Invalid Keycard", 15))
 end
 
-local UI_drawPINField = function(pinString, uiPINPrefixString = "")
+local UI_drawPINField = function(pinString, uiPINPrefixString)
+    uiPINPrefixString = uiPINPrefixString or ""
+
     term.clear()
     term.setCursorPos(1, 1)
     
     write(" Please enter  \n")
-    write(centerText(uiPINPrefixString.."PIN Code", 15).."\n"))
+    write(centerText(uiPINPrefixString.."PIN Code", 15).."\n")
     write("               \n")
     
     write("  ")
@@ -241,6 +240,7 @@ end
 local UI_drawMenu = function(name)
     term.clear()
     term.setCursorPos(1, 1)
+    term.setTextColor(colors.white)
 
     write(centerText("Welcome", 15).."\n")
     write(centerText(name, 15).."\n")
@@ -256,7 +256,9 @@ local UI_drawMenu = function(name)
     term.setBackgroundColor(colors.black)
 end
 
-local UI_pinCode = function(uiPINPrefixString = "")
+local UI_pinCode = function(uiPINPrefixString)
+    uiPINPrefixString = uiPINPrefixString or ""
+
     local pin = ""
     local showPin = false
 
@@ -292,15 +294,23 @@ local UI_pinCode = function(uiPINPrefixString = "")
 end
 
 local UI_menu = function(name)
-    UI_drawMenu(name)
-
     while true do
+        UI_drawMenu(name)
         e, side, x, y = os.pullEvent("monitor_touch")
 
         if x >= 2 and x <= 14 then
             if y == 4 then
                 local pin = UI_pinCode("new ")
-                changePIN(name, pin)
+                
+                if pin == "exit" then
+                    UI_base()
+                    term.setCursorPos(1, 8)
+                    term.setTextColor(colors.red)
+                    print(centerText("Aborted", 15))
+                    sleep(2)
+                else
+                    changePIN(name, pin)
+                end
             elseif y == 6 then
                 return "exit"
             end 
@@ -319,6 +329,10 @@ local run = lookupServer()
 while run do
     UI_insertCard()
 
+    while not fs.exists("disk") do
+        sleep(0.1)
+    end
+
     repeat
         local name = UI_checkDisk()
         if name == nil then
@@ -329,11 +343,11 @@ while run do
             break
         end
         
-        local pinResult = UI_pinCode(name)
+        local pinResult = UI_pinCode()
         if pinResult == "exit" then
             ejectDisk()
         else
-            local authResult = auth(name, pin, access)
+            local authResult = auth(name, pinResult, "0")
 
             if authResult then
                 while true do
