@@ -6,15 +6,13 @@ local modem = peripheral.find("modem")
 local sModem = ecnet.wrap(modem)
 
 local dns = "c762:b905:a388:cbb6:f317"
-local doorConnection = "back"
-local btnConnection = "back"
-local title = "Andrej"
-local titleColor = colors.blue
+local title = "Keycard"
+local titleColor = colors.yellow
 local access = "1"
 
-local serverDomain = "andrej.key"
+local serverDomain = "keycard.key"
 local serverAddress = ""
-local versionString = "v2.0"
+local versionString = "v2.1"
 
 local causeStrings = {
     NAME = "Invalid user",
@@ -26,7 +24,7 @@ local causeStrings = {
 term.clear()
 term.setCursorPos(1, 1)
 term.setTextColor(colors.yellow)
-print("Keycard Reader " .. versionString)
+print("Auth Client " .. versionString)
 
 local mon = peripheral.find("monitor")
 mon.setTextScale(0.5)
@@ -181,12 +179,12 @@ local UI_invalidDisk = function()
     print(centerText("Invalid Keycard", 15))
 end
 
-local UI_drawPINField = function(pinString)
+local UI_drawPINField = function(pinString, uiPINPrefixString = "")
     term.clear()
     term.setCursorPos(1, 1)
     
     write(" Please enter  \n")
-    write("   PIN Code    \n")
+    write(centerText(uiPINPrefixString + "PIN Code", 15) + "\n"))
     write(" +-----------+ \n")
     
     write(" |")
@@ -245,14 +243,9 @@ local UI_pinCode = function(name)
         if string.len(pin) == 6 then break end
     end
 
-    local authResult = auth(name, pin, access)
-    ejectDisk()
+    -- Don't auto authenticate since pin entry will be needed to set new pin
 
-    if authResult then
-        door(true)
-        sleep(4)
-        door(false)
-    end
+    local authResult = auth(name, pin, access)
 end
 
 -- ================================
@@ -266,17 +259,6 @@ local run = lookupServer()
 while run do
     UI_insertCard()
 
-    --Listen for redstone, if no disk is inserted
-    while not fs.exists("disk") do
-        if redstone.getInput(btnConnection) == true then
-            door(true) 
-            sleep(4)
-        end
-
-        if redstone.getInput(btnConnection) == false then door(false) end
-        sleep(0.1)
-    end
-
     repeat
         local name = UI_checkDisk()
         if name == nil then
@@ -288,6 +270,12 @@ while run do
         end
         
         local pinResult = UI_pinCode(name)
+        
+        -- Selector UI with following options:
+        -- -----------------------------------
+        --  - Change PIN
+        --  - Done
+        
         if pinResult == 1 then
             ejectDisk()
         end
