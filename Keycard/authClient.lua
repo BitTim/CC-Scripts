@@ -5,13 +5,13 @@ local ecnet = require("api/ecnet")
 local modem = peripheral.wrap("front")
 local sModem = ecnet.wrap(modem)
 
-local dns = "b333:6bd3:19fc:76e7:48c3"
+local dns = "fe11:af7e:cb8c:4ff5:40ea"
 local title = "Auth Terminal"
-local titleColor = colors.yellow
+local titleColor = colors.white
 
 local serverDomain = "keycard.key"
 local serverAddress = ""
-local versionString = "v2.1"
+local versionString = "v2.2"
 
 local causeStrings = {
     NAME = "Invalid user",

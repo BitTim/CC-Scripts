@@ -9,12 +9,12 @@ local dns = "fe11:af7e:cb8c:4ff5:40ea"
 local doorConnection = "back"
 local btnConnection = "back"
 local title = "Keycard"
-local titleColor = colors.red
+local titleColor = colors.white
 local access = "all"
 
 local serverDomain = "server.key"
 local serverAddress = ""
-local versionString = "v2.1"
+local versionString = "v2.2"
 
 local causeStrings = {
     NAME = "Invalid user",

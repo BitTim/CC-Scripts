@@ -5,7 +5,7 @@ local sModem = ecnet.wrap(modem)
 
 --Create Variables
 local title = "Keycard Server"
-local version = "v2.1"
+local version = "v2.2"
 
 --Set title of shell
 term.setTextColor(colors.yellow)
