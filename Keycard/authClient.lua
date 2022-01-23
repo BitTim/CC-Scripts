@@ -322,47 +322,52 @@ end
 -- Main Loop
 -- ================================
 
---Late Init
-local run = lookupServer()
+while true do
+    local run = lookupServer()
 
---Main Loop
-while run do
-    UI_insertCard()
-
-    while not fs.exists("disk") do
-        sleep(0.1)
-    end
-
-    repeat
-        local name = UI_checkDisk()
-        if name == nil then
-            UI_invalidDisk()
-            ejectDisk()
-
-            sleep(2)
-            break
+    while run do
+        UI_insertCard()
+    
+        while not fs.exists("disk") do
+            sleep(0.1)
         end
+
+        repeat
+            local name = UI_checkDisk()
+            if name == nil then
+                UI_invalidDisk()
+                ejectDisk()
+
+                sleep(2)
+                break
+            end
         
-        local pinResult = UI_pinCode()
-        if pinResult == "exit" then
-            ejectDisk()
-        else
-            local authResult = auth(name, pinResult, "0")
+            local pinResult = UI_pinCode()
+            if pinResult == "exit" then
+                ejectDisk()
+            else
+                local authResult = auth(name, pinResult, "all")
 
-            if authResult then
-                while true do
-                    local menuResult = UI_menu(name)
+                if authResult then
+                    while true do
+                        local menuResult = UI_menu(name)
 
-                    if menuResult == "exit" then
-                        ejectDisk()
-                        break
+                        if menuResult == "exit" then
+                            ejectDisk()
+                            break
+                        end
                     end
                 end
             end
-        end
-    until true
+        until true
 
-    sleep(0.1)
+        sleep(0.1)
+    end
+    
+    term.setCursorPos(1, 1)
+    term.setTextColor(colors.red)
+    term.write("Could not connect to server, retrying")
+    sleep(2)
 end
 
 modem.closeAll()

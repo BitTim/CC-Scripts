@@ -66,8 +66,13 @@ end
 
 --Function for checking Access
 local authAccess = function(name, access)
-    if db[name].hash < access then return false end
-    return true
+    local accesses = db[name].access
+    
+    for i = 1, #accesses do
+        if accesses[i] == access then return true end
+    end
+
+    return false
 end
 
 --Function for saving Database

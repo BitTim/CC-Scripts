@@ -10,7 +10,7 @@ local doorConnection = "back"
 local btnConnection = "back"
 local title = "Keycard"
 local titleColor = colors.red
-local access = 1
+local access = "all"
 
 local serverDomain = "server.key"
 local serverAddress = ""
