@@ -22,7 +22,6 @@ term.redirect(mon)
 term.setTextColor(colors.yellow)
 term.clear()
 term.setCursorPos(1, 1)
-print(
 print(title.." "..version)
 term.setTextColor(colors.lightGray)
 

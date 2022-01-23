@@ -5,14 +5,14 @@ local ecnet = require("api/ecnet")
 local modem = peripheral.find("modem")
 local sModem = ecnet.wrap(modem)
 
-local dns = "c762:b905:a388:cbb6:f317"
+local dns = "fe11:af7e:cb8c:4ff5:40ea"
 local doorConnection = "back"
 local btnConnection = "back"
 local title = "Keycard"
-local titleColor = colors.yellow
-local access = "1"
+local titleColor = colors.red
+local access = 1
 
-local serverDomain = "keycard.key"
+local serverDomain = "server.key"
 local serverAddress = ""
 local versionString = "v2.1"
 
@@ -257,41 +257,48 @@ end
 -- Main Loop
 -- ================================
 
---Late Init
-local run = lookupServer()
-
 --Main Loop
-while run do
-    UI_insertCard()
+while true do
+    local run = lookupServer()
 
-    --Listen for redstone, if no disk is inserted
-    while not fs.exists("disk") do
-        if redstone.getInput(btnConnection) == true then
-            door(true) 
-            sleep(4)
+    while run do
+        UI_insertCard()
+
+        --Listen for redstone, if no disk is inserted
+        while not fs.exists("disk") do
+            if redstone.getInput(btnConnection) == true then
+                door(true) 
+                sleep(4)
+            end
+
+            if redstone.getInput(btnConnection) == false then door(false) end
+            sleep(0.1)
         end
 
-        if redstone.getInput(btnConnection) == false then door(false) end
+        repeat
+            local name = UI_checkDisk()
+            if name == nil then
+                UI_invalidDisk()
+                ejectDisk()
+
+                sleep(2)
+                break
+            end
+        
+            local pinResult = UI_pinCode(name)
+            if pinResult == 1 then
+                ejectDisk()
+            end
+        until true
+
         sleep(0.1)
     end
-
-    repeat
-        local name = UI_checkDisk()
-        if name == nil then
-            UI_invalidDisk()
-            ejectDisk()
-
-            sleep(2)
-            break
-        end
-        
-        local pinResult = UI_pinCode(name)
-        if pinResult == 1 then
-            ejectDisk()
-        end
-    until true
-
-    sleep(0.1)
+    
+    term.setTextColor(colors.red)
+    term.write("Could not connect to server, retrying")
+    term.setTextColor(colors.white)
+    
+    sleep(2)
 end
 
 modem.closeAll()
