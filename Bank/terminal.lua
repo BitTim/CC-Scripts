@@ -2,17 +2,17 @@ os.loadAPI("api/sha")
 
 --Create Secure Modem
 local ecnet = require("api/ecnet")
-local modem = peripheral.wrap("front")
+local modem = peripheral.wrap("back")
 local sModem = ecnet.wrap(modem)
 
-local dns = "687c:beb9:d3f2:12c5:0704"
+local dns = "fe11:af7e:cb8c:4ff5:40ea"
 local title = "BitBank"
 local titleColor = colors.red
 local tallMode = false
 
 local serverDomain = "bitbank.bit"
 local serverAddress = ""
-local versionString = "v1.0"
+local versionString = "v1.1"
 
 local causeStrings = {
     NAME = "Invalid user",
@@ -198,6 +198,36 @@ local transfer = function(name, recipiant, amount)
     end
 end
 
+--Change PIN
+local changePIN = function(name, pin)
+    local hash = sha.sha256(pin)
+
+    local p = {head = "CHGPIN", name = name, hash = hash}
+    local msg = textutils.serialize(p)
+
+    UI_base()
+    term.setCursorPos(1, 8)
+    term.setTextColor(colors.red)
+
+    local reply = sendPacketForReply(serverAddress, msg, "CHGPIN")
+    if reply == -1 then
+        print(centerText("Unknown Error", 15))
+        sleep(2)
+        return
+    end
+
+    if reply.state == "FAIL" then
+        print(centerText(causeStrings[reply.cause], 15))
+        sleep(2)
+        return false
+    elseif reply.state == "SUCCESS" then
+        term.setTextColor(colors.green)
+        print(centerText("Success!", 15))
+        sleep(2)
+        return true
+    end
+end
+
 -- ================================
 -- UI
 -- ================================
@@ -233,32 +263,32 @@ local UI_drawNumberInput = function(x, y, outputString, title)
     term.setCursorPos(x, y)
     title = title .. "\n"
 
-    write(" +-----------+")
+    write("               ")
     term.setCursorPos(2 + (13 - string.len(title)) / 2, y)
 
     write(title)
-    write(" |")
+    write("  ")
     term.setBackgroundColor(colors.gray)
     write("  "..outputString.."  ")
     term.setBackgroundColor(colors.black)
-    write("| \n")
+    write("  \n")
     
-    write(" +-----------+ \n")
-    write(" | 1 | 2 | 3 | \n")
-    write(" | 4 | 5 | 6 | \n")
-    write(" | 7 | 8 | 9 | \n")
+    write("               \n")
+    write("   1   2   3   \n")
+    write("   4   5   6   \n")
+    write("   7   8   9   \n")
     
-    write(" |")
+    write("  ")
     term.setBackgroundColor(colors.red)
     write(" X ")
     term.setBackgroundColor(colors.black)
-    write("| 0 |")
+    write("  0  ")
     term.setBackgroundColor(colors.yellow)
     write(" C ")
     term.setBackgroundColor(colors.black)
-    write("| \n")
+    write("  \n")
     
-    write(" +-----------+")    
+    write("               ")    
 end
 
 local UI_numberInput = function(dx, dy, hide, digits, title)
@@ -335,7 +365,7 @@ local UI_drawActions = function(x, y, name)
     term.setCursorPos(x + 1, y + 6)
     
     term.setBackgroundColor(colors.gray)
-    term.write(centerText(" Print log  ", 15))
+    term.write(centerText(" Change PIN ", 15))
     term.setBackgroundColor(colors.black)
     
     term.setCursorPos(x + 1, y + 8)
@@ -353,7 +383,7 @@ local UI_actions = function(dx, dy, name)
         if x >= 2 + dx and x <= 14 + dx then
             if y == 2 + dy then return "balance" end
             if y == 4 + dy then return "transfer" end
-            if y == 6 + dy then return "print" end
+            if y == 6 + dy then return "changePIN" end
             if y == 8 + dy then return "quit" end
         end
     end
@@ -381,14 +411,20 @@ local UI_transfer = function(name)
     transfer(name, recipiant, amount)
 end
 
-local UI_print = function()
-    UI_base()
+local UI_changePIN = function(name)
+    term.clear()
+    term.setCursorPos(1, 1)
+    term.setTextColor(colors.red)
+    term.write(centerText("Change PIN" ,15))
+    term.setTextColor(colors.white)
 
-    term.setCursorPos(1, 8)
-    term.setTextColor(colors.blue)
+    local newPIN = UI_numberInput(1, 3, true, 6, "New PIN")
+    if newPIN == 1 then
+        UI_cancelled()
+        return -1
+    end
 
-    term.write(centerText("Coming Soon", 15))
-    sleep(2)
+    changePIN(name, newPIN)
 end
 
 local UI_quit = function()
@@ -405,68 +441,82 @@ end
 -- Main Loop
 -- ================================
 
---Late Init
-local run = lookupServer()
-local yOff = 2
-
-if tallMode then
-    yOff = 11
-end
-
 --Main Loop
-while run do
-    UI_insertCard()
+while true do
+    local run = lookupServer()
+    local yOff = 2
 
-    --Wait, if no disk is inserted
-    while not fs.exists("disk") do
-        sleep(0.1)
-    end   
+    if tallMode then
+        yOff = 11
+    end
 
-    repeat
-        local name = UI_checkDisk()
-        if name == nil then
-            UI_invalidDisk()
-            ejectDisk()
+    while run do
+        UI_insertCard()
 
-            sleep(2)
-            break
-        end
-        
-        --Authenticate user
-        local pin = UI_numberInput(1, yOff, true, 6, "PIN")
+        --Wait, if no disk is inserted
+        while not fs.exists("disk") do
+            sleep(0.1)
+        end   
 
-        if pin == 1 then
-            ejectDisk()
-            break
-        end
+        repeat
+            local name = UI_checkDisk()
+            if name == nil then
+                UI_invalidDisk()
+                ejectDisk()
 
-        if auth(name, pin) == false then
-            ejectDisk()
-            break
-        end
-        
-        --Ask for actions
-        local quit = false
-        while not quit do
-            local action = UI_actions(1, 1, name)
-            
-            if action == "balance" then
-                balance(name)
-            elseif action == "transfer" then
-                UI_transfer(name)
-            elseif action == "print" then
-                UI_print()
-            elseif action == "quit" then
+                sleep(2)
                 break
             end
-        end
-        
-        --Return Card
-        ejectDisk()
-        UI_quit()
-    until true
+            
+            --Authenticate user
+            
+            term.clear()
+            term.setCursorPos(1, 1)
+            term.setTextColor(colors.red)
+            term.write(centerText("Enter PIN" ,15))
+            term.setTextColor(colors.white)
 
-    sleep(0.1)
+            local pin = UI_numberInput(1, 3, true, 6, "PIN")
+
+            if pin == 1 then
+                ejectDisk()
+                break
+            end
+
+            if auth(name, pin) == false then
+                ejectDisk()
+                break
+            end
+            
+            --Ask for actions
+            local quit = false
+            while not quit do
+                local action = UI_actions(1, 1, name)
+                
+                if action == "balance" then
+                    balance(name)
+                elseif action == "transfer" then
+                    UI_transfer(name)
+                elseif action == "changePIN" then
+                    UI_changePIN(name)
+                elseif action == "quit" then
+                    break
+                end
+            end
+            
+            --Return Card
+            ejectDisk()
+            UI_quit()
+        until true
+
+        sleep(0.1)
+    end
+    
+term.setTextColor(colors.red)
+term.write("Could not connect to server, retrying")
+term.setTextColor(colors.white)
+
+sleep(2)
 end
 
 modem.closeAll()
