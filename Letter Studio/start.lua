@@ -1,6 +1,7 @@
 local util = require("Modules/util")
 local ui = require("Modules/ui")
 local edit = require("Modules/edit")
+local cursor = require("Modules/cursor")
 
 local w, h = term.getSize()
 
@@ -43,16 +44,16 @@ while true do
         -- TODO: Implement arrow Keys
 
         if key == keys.up then
-            
+            cursorPos = cursor.prev(pages, cursorPos, true)
 
         elseif key == keys.down then
-            
+            cursorPos = cursor.next(pages, cursorPos, true)
 
         elseif key == keys.left then
-            
+            cursorPos = cursor.prev(pages, cursorPos, false)
 
         elseif key == keys.right then
-            
+            cursorPos = cursor.next(pages, cursorPos, false)
 
 
 

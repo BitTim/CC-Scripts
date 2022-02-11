@@ -1,7 +1,10 @@
 local M = {}
 
 M.util = nil
+M.cursor = nil
 M.pageSize = nil
+
+M.currentWord = ""
 
 function M.init(util, pageSize)
     M.util = util
@@ -18,6 +21,7 @@ end
 
 
 --TODO: Add Delete, Cut, Copy and Paste
+--FIXME: Word wrapping does not work when cursor gets moved to next line
 
 function M.insert(cursorPos, pages, page, x, y, insStr)
     local str = ""
@@ -40,8 +44,20 @@ function M.insert(cursorPos, pages, page, x, y, insStr)
     if not inserted then str = str .. insStr end
     cursorPos.x = cursorPos.x + string.len(insStr)
 
+    if cursorPos.x > M.pageSize.w then
+        cursorPos.x = 1
+        cursorPos.y = cursorPos.y + 1
+
+        if cursorPos.y > M.pageSize.h then
+            cursorPos.y = 1
+            cursorPos.page = cursorPos.page + 1
+
+            if cursorPos.page > #pages then pages = M.newPage(pages) end
+        end
+    end
+
     -- Wrap if longer than line
-    if string.len(str) >= M.pageSize.w then
+    if string.len(str) > M.pageSize.w then
         local lastSpaceIdx = string.find(str, " [^ ]*$")
         local line = nil
         local wrapped = nil
@@ -51,7 +67,7 @@ function M.insert(cursorPos, pages, page, x, y, insStr)
             wrapped = string.sub(str, lastSpaceIdx + 1)
         else
             line = string.sub(str, 1, M.pageSize.w)
-            wrapped = string.sub(str, M.pageSize.w)
+            wrapped = string.sub(str, M.pageSize.w + 1)
         end
 
         str = line
