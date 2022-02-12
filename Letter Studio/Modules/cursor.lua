@@ -1,3 +1,6 @@
+local cursorColor = colors.blue
+local scrollPadding = 2
+
 local M = {}
 
 M.pageSize = nil
@@ -11,6 +14,33 @@ function M.getWidth(pages, page, y)
 
     local w = string.len(pages[page][y])
     return w
+end
+
+function M.toScreenSpace(cursorPos, pagePos, scrollPos, pageOffset, pageSpacing)
+    local x, y, p = cursorPos.x, cursorPos.y, cursorPos.page
+    
+    local screenX = x + pagePos - 1
+    local screenY = ((p - 1) *(M.pageSize.h + pageSpacing)) + y + pageOffset - scrollPos - 1
+
+    return {x = screenX, y = screenY}
+end
+
+function M.jumpToCursor(cursorPos, pagePos, scrollPos, pageOffset, pageSpacing)
+    local screenPos = M.toScreenSpace(cursorPos, pagePos, scrollPos, pageOffset, pageSpacing)
+    local screenX, screenY = screenPos.x, screenPos.y
+    local recalcScreenPos = false
+
+    local _, h = term.getSize()
+
+    if screenY > h - scrollPadding then
+        scrollPos = scrollPos + (screenY - (h - scrollPadding))
+    end
+
+    if screenY < scrollPadding + 1 then
+        scrollPos = scrollPos - (scrollPadding + 1 - screenY)
+    end
+
+    return scrollPos
 end
 
 function M.setVisualCursor(pages, cursorPos, pagePos, scrollPos, pageOffset, pageSpacing)
@@ -36,10 +66,11 @@ function M.setVisualCursor(pages, cursorPos, pagePos, scrollPos, pageOffset, pag
         end
     until true
 
-    -- TODO: Scroll when cursor off screen
+    local screenPos = M.toScreenSpace({x = x, y = y, page = p}, pagePos, scrollPos, pageOffset, pageSpacing)
+    local screenX, screenY = screenPos.x, screenPos.y
 
-    term.setTextColor(colors.blue)
-    term.setCursorPos(x + pagePos - 1, ((p - 1) *(M.pageSize.h + pageSpacing)) + y + pageOffset - scrollPos - 1)
+    term.setTextColor(cursorColor)
+    term.setCursorPos(screenX, screenY)
 end
 
 function M.next(pages, cursorPos, yOnly)

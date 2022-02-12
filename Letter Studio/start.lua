@@ -37,6 +37,7 @@ while true do
     if e == "char" then
         local c = eventData[2]
         cursorPos, pages = edit.insert(cursorPos, pages, cursorPos.page, cursorPos.x, cursorPos.y, c)
+        scrollPos = cursor.jumpToCursor(cursorPos, pagePos, scrollPos, pageOffset, pageSpacing)
 
     elseif e == "key" then
         local key = eventData[2]
@@ -63,7 +64,10 @@ while true do
 
         elseif key == keys.backspace then
             
+
         end
+
+        scrollPos = cursor.jumpToCursor(cursorPos, pagePos, scrollPos, pageOffset, pageSpacing)
 
     elseif e == "mouse_click" then
 
