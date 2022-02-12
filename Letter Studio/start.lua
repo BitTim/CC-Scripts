@@ -24,7 +24,7 @@ pages = edit.newPage(pages)
 
 while true do
     ui.draw(pageOffset, cursorPos, scrollPos, pages)
-    term.setCursorPos(cursorPos.x + pagePos - 1, ((cursorPos.page - 1) * pageSize.h) + cursorPos.y + pageOffset - scrollPos - 1)
+    cursor.setVisualCursor(pages, cursorPos, pagePos, scrollPos, pageOffset, pageSize)
 
     local _, y = term.getCursorPos()
     if y < 2 then term.setCursorBlink(false)

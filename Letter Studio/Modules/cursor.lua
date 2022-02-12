@@ -7,6 +7,21 @@ function M.getWidth(pages, page, y)
     return w
 end
 
+function M.setVisualCursor(pages, cursorPos, pagePos, scrollPos, pageOffset, pageSize)
+    local x, y, p = cursorPos.x, cursorPos.y, cursorPos.page
+    
+    if x > pageSize.w then
+        local newPos = M.next(pages, {x = x, y = y, page = p}, false)
+        x, y, p = newPos.x, newPos.y, newPos.page
+    
+        print("New Pos: x " .. x .. ", y " .. y .. ", p " .. p)
+    end
+    
+    print("Used Pos: x " .. x .. ", y " .. y .. ", p " .. p)
+    sleep(2)
+    term.setCursorPos(x + pagePos - 1, ((p - 1) * pageSize.h) + y + pageOffset - scrollPos - 1)
+end
+
 function M.next(pages, cursorPos, yOnly)
     if yOnly == nil then yOnly = false end
     local x, y, p = cursorPos.x, cursorPos.y, cursorPos.page
