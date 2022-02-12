@@ -1,5 +1,11 @@
 local M = {}
 
+M.pageSize = nil
+
+function M.init(pageSize)
+    M.pageSize = pageSize
+end
+
 function M.getWidth(pages, page, y)
     if pages[page] == nil or pages[page][y] == nil then return 1 end
 
@@ -7,19 +13,33 @@ function M.getWidth(pages, page, y)
     return w
 end
 
-function M.setVisualCursor(pages, cursorPos, pagePos, scrollPos, pageOffset, pageSize)
+function M.setVisualCursor(pages, cursorPos, pagePos, scrollPos, pageOffset, pageSpacing)
     local x, y, p = cursorPos.x, cursorPos.y, cursorPos.page
-    
-    if x > pageSize.w then
-        local newPos = M.next(pages, {x = x, y = y, page = p}, false)
-        x, y, p = newPos.x, newPos.y, newPos.page
-    
-        print("New Pos: x " .. x .. ", y " .. y .. ", p " .. p)
-    end
-    
-    print("Used Pos: x " .. x .. ", y " .. y .. ", p " .. p)
-    sleep(2)
-    term.setCursorPos(x + pagePos - 1, ((p - 1) * pageSize.h) + y + pageOffset - scrollPos - 1)
+
+    repeat
+        if x > M.pageSize.w then
+            y = y + 1
+
+            if y > #pages[p] + 1 or y > M.pageSize.h then
+                p = p + 1
+
+                if p > #pages then
+                    y = y - 1
+                    p = p - 1
+                    break
+                end
+
+                y = 1
+            end
+
+            x = 1
+        end
+    until true
+
+    -- TODO: Scroll when cursor off screen
+
+    term.setTextColor(colors.blue)
+    term.setCursorPos(x + pagePos - 1, ((p - 1) *(M.pageSize.h + pageSpacing)) + y + pageOffset - scrollPos - 1)
 end
 
 function M.next(pages, cursorPos, yOnly)
@@ -41,7 +61,11 @@ function M.next(pages, cursorPos, yOnly)
             y = 1
         end
 
-        x = 1
+        if not yOnly then x = 1
+        else
+            local newW = M.getWidth(pages, p, y)
+            if x > newW + 1 then x = newW + 1 end
+        end
     end
 
     return {x = x, y = y, page = p}
@@ -63,10 +87,12 @@ function M.prev(pages, cursorPos, yOnly)
                 return cursorPos
             end
 
-            y = #pages[page]
+            y = #pages[p]
         end
 
-        x = M.getWidth(pages, p, y) + 1
+        if not yOnly or x > M.getWidth(pages, p, y) + 1 then
+            x = M.getWidth(pages, p, y) + 1
+        end
     end
 
     return {x = x, y = y, page = p}

@@ -17,6 +17,7 @@ local scrollPos = -(pageOffset + 1)
 
 term.clear()
 
+cursor.init(pageSize)
 edit.init(util, pageSize)
 ui.init(util, pageSize, pageSpacing, pagePos)
 
@@ -24,7 +25,7 @@ pages = edit.newPage(pages)
 
 while true do
     ui.draw(pageOffset, cursorPos, scrollPos, pages)
-    cursor.setVisualCursor(pages, cursorPos, pagePos, scrollPos, pageOffset, pageSize)
+    cursor.setVisualCursor(pages, cursorPos, pagePos, scrollPos, pageOffset, pageSpacing)
 
     local _, y = term.getCursorPos()
     if y < 2 then term.setCursorBlink(false)
@@ -35,13 +36,10 @@ while true do
 
     if e == "char" then
         local c = eventData[2]
-        -- TODO: Implement helper functions to find previous and next positions for cursor
         cursorPos, pages = edit.insert(cursorPos, pages, cursorPos.page, cursorPos.x, cursorPos.y, c)
 
     elseif e == "key" then
         local key = eventData[2]
-
-        -- TODO: Implement arrow Keys
 
         if key == keys.up then
             cursorPos = cursor.prev(pages, cursorPos, true)

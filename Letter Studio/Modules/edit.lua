@@ -44,6 +44,11 @@ function M.insert(cursorPos, pages, page, x, y, insStr)
     if not inserted then str = str .. insStr end
     cursorPos.x = cursorPos.x + string.len(insStr)
 
+    -- Create new page when entered last possible char on page
+    if x > M.pageSize.w - 1 and y > M.pageSize.h - 1 and page > #pages - 1 then
+        pages = M.newPage(pages)
+    end
+
     -- Wrap if longer than line
     if string.len(str) > M.pageSize.w then
         local lastSpaceIdx = string.find(str, " [^ ]*$")
@@ -65,7 +70,7 @@ function M.insert(cursorPos, pages, page, x, y, insStr)
             cursorPos.y = 1
             cursorPos.page = page + 1
 
-            if page > #pages then pages = M.newPage(pages) end
+            if page + 1 > #pages then pages = M.newPage(pages) end
             cursorPos, pages = M.insert(cursorPos, pages, page + 1, 1, 1, wrapped)
         else
             cursorPos.x = 1
