@@ -15,10 +15,12 @@ local cursorPos = {page = 1, x = 1, y = 1}
 local pageOffset = 1
 local scrollPos = -(pageOffset + 1)
 
+local control = false
+
 term.clear()
 
 cursor.init(pageSize)
-edit.init(util, pageSize)
+edit.init(util, pageSize, cursor)
 ui.init(util, pageSize, pageSpacing, pagePos)
 
 pages = edit.newPage(pages)
@@ -35,42 +37,67 @@ while true do
     local e = eventData[1]
 
     if e == "char" then
-        local c = eventData[2]
-        cursorPos, pages = edit.insert(cursorPos, pages, cursorPos.page, cursorPos.x, cursorPos.y, c)
-        scrollPos = cursor.jumpToCursor(cursorPos, pagePos, scrollPos, pageOffset, pageSpacing)
+        if not control then
+            local c = eventData[2]
+            cursorPos, pages = edit.insert(cursorPos, pages, c)
+            scrollPos = cursor.jumpToCursor(cursorPos, pagePos, scrollPos, pageOffset, pageSpacing)
+        end
 
     elseif e == "key" then
         local key = eventData[2]
 
-        if key == keys.up then
+        if key == keys.leftCtrl then
+            control = true
+
+        elseif key == keys.up and not control then
             cursorPos = cursor.prev(pages, cursorPos, true)
 
-        elseif key == keys.down then
+        elseif key == keys.down and not control then
             cursorPos = cursor.next(pages, cursorPos, true)
 
-        elseif key == keys.left then
+        elseif key == keys.left and not control then
             cursorPos = cursor.prev(pages, cursorPos, false)
 
-        elseif key == keys.right then
+        elseif key == keys.right and not control then
             cursorPos = cursor.next(pages, cursorPos, false)
 
+        elseif key == keys.home then
+            cursorPos = cursor.jumpBegin(cursorPos, control)
 
-
-        elseif key == keys.enter then
-
-
-        elseif key == keys.delete then
-
-
-        elseif key == keys.backspace then
+        elseif key == keys["end"] then
+            cursorPos = cursor.jumpEnd(pages, cursorPos, control)
             
+
+
+        elseif key == keys.enter and not control then
+            cursorPos, pages = edit.newline(cursorPos, pages)
+
+        elseif key == keys.backspace and not control then
+            cursorPos, pages = edit.remove(cursorPos, pages)
+
+        elseif key == keys.delete and not control then
 
         end
 
         scrollPos = cursor.jumpToCursor(cursorPos, pagePos, scrollPos, pageOffset, pageSpacing)
 
-    elseif e == "mouse_click" then
+    elseif e == "key_up" then
+        local key = eventData[2]
 
+        if key == keys.leftCtrl then
+            control = false
+        end
+
+    elseif e == "paste" then
+        local str = eventData[2]
+        cursorPos, pages = edit.insert(cursorPos, pages, str)
+        scrollPos = cursor.jumpToCursor(cursorPos, pagePos, scrollPos, pageOffset, pageSpacing)
+
+    elseif e == "mouse_click" then
+        local btn, x, y = eventData[2], eventData[3], eventData[4]
+        if btn == 1 then
+            cursorPos = cursor.setPos(pages, cursor.fromScreenSpace(x, y, pagePos, scrollPos, pageOffset, pageSpacing))
+        end
 
     elseif e == "mouse_scroll" then
         local scrollDir = eventData[2]
