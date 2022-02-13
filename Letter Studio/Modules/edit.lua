@@ -23,42 +23,62 @@ end
 
 function M.remove(cursorPos, pages)
     local page, x, y = cursorPos.page, cursorPos.x, cursorPos.y
-
-    if pages[page] == nil or pages[page][y] == nil then return cursorPos, pages end
-
-    --if pages[page][y] == "" then
-        --pages[page][y] = nil
-    --end
     
-    if x < 2 and y > 1 then
-        y = y - 1
-        cursorPos, pages = M.insert({x = M.cursor.getWidth(pages, page, y) + 1 , y = y, page = page}, pages, pages[page][y + 1])
+    if x < 2 then
+        repeat
+            if y <= 1 and page <= 1 then break end
+    
+            local prevY = y - 1
+            local prevP = page
+            
+            if prevY < 1 then
+                prevP = prevP - 1
+                
+                if prevP < 1 then break end
+            end
+    
+            local prevWidth = M.cursor.getWidth(pages, prevP, prevY)
+            if prevWidth >= M.pageSize.w then
         
-        -- Shift all lines up
-        for i = page, #pages do
-            for j = 1, #pages[i] do
-                if i ~= page and j > y then
-                    if j - 1 < 1 then
-                        if i - 1 < 1 then
+            end
+        
+            pages[prevP][prevY] = pages[prevP][prevY] .. pages[page][y]
+            x = prevWidth + 1
+            y = prevY
+            page = prevP
+            
+            cursorPos = {x = x, y = y, page = page}
+            
+            for i = page, #pages do
+                for j = 1, #pages[i] do
+                    if i ~= page or j > y then
+                        if i >= #pages and j >= #pages[i] then
+                            pages[i][j] = nil
                             break
                         end
-
-                        pages[i - 1][M.pageSize.h] = pages[i][j]
-                    else
-                        pages[i][j - 1] = pages[i][j]
+                    
+                        if j + 1 > M.pageSize.h then
+                            pages[i][j] = pages[i + 1][1]
+                        else
+                            pages[i][j] = pages[i][j + 1]
+                        end
                     end
                 end
             end
-        end
+            
+            -- Wrap with newline
+        until true
     else
         local str = pages[page][y]
         local h1 = string.sub(str, 1, x - 2)
         local h2 = string.sub(str, x)
+        
         str = h1 .. h2
         pages[page][y] = str
+        cursorPos = M.cursor.prev(pages, cursorPos, false)
     end
-
-    return M.cursor.prev(pages, cursorPos, false), pages
+    
+    return cursorPos, pages
 end
 
 function M.newline(cursorPos, pages)
@@ -129,7 +149,7 @@ function M.insert(cursorPos, pages, insStr)
 
     -- Wrap if longer than line
     if string.len(str) > M.pageSize.w then
-        local tmp = string.sub(str, 1, M.pageSize.w)
+        local tmp = string.sub(str, 1, M.pageSize.w + 1)
         local lastSpaceIdx = string.find(tmp, " [^ ]*$")
         local line = nil
         local wrapped = nil
