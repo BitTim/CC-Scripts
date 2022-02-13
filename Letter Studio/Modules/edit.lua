@@ -26,16 +26,37 @@ function M.remove(cursorPos, pages)
 
     if pages[page] == nil or pages[page][y] == nil then return cursorPos, pages end
 
-    if pages[page][y] == "" then
-        pages[page][y] = nil
-        return M.cursor.prev(pages, cursorPos, false), pages
-    end
+    --if pages[page][y] == "" then
+        --pages[page][y] = nil
+    --end
+    
+    if x < 2 and y > 1 then
+        y = y - 1
+        cursorPos, pages = M.insert({x = M.cursor.getWidth(pages, page, y) + 1 , y = y, page = page}, pages, pages[page][y + 1])
+        
+        -- Shift all lines up
+        for i = page, #pages do
+            for j = 1, #pages[i] do
+                if i ~= page and j > y then
+                    if j - 1 < 1 then
+                        if i - 1 < 1 then
+                            break
+                        end
 
-    local str = pages[page][y]
-    local h1 = string.sub(str, 1, x - 2)
-    local h2 = string.sub(str, x)
-    str = h1 .. h2
-    pages[page][y] = str
+                        pages[i - 1][M.pageSize.h] = pages[i][j]
+                    else
+                        pages[i][j - 1] = pages[i][j]
+                    end
+                end
+            end
+        end
+    else
+        local str = pages[page][y]
+        local h1 = string.sub(str, 1, x - 2)
+        local h2 = string.sub(str, x)
+        str = h1 .. h2
+        pages[page][y] = str
+    end
 
     return M.cursor.prev(pages, cursorPos, false), pages
 end
