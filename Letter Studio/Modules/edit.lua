@@ -39,7 +39,7 @@ function M.remove(cursorPos, pages)
     
             local prevWidth = M.cursor.getWidth(pages, prevP, prevY)
             if prevWidth >= M.pageSize.w then
-        
+                -- Case 3
             end
         
             pages[prevP][prevY] = pages[prevP][prevY] .. pages[page][y]
@@ -90,7 +90,7 @@ function M.newline(cursorPos, pages)
     end
 
     if p > #pages then
-        pages = M.newPage()
+        pages = M.newPage(pages)
         pages[p][y + 1] = ""
     end
 
@@ -113,6 +113,7 @@ function M.newline(cursorPos, pages)
 
     --Split line at x position
     local str = pages[p][y]
+    if str == nil then str = "" end
     pages[p][y] = string.sub(str, 1, x - 1)
     pages[p][y + 1] = string.sub(str, x)
     
