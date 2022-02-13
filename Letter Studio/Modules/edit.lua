@@ -55,6 +55,7 @@ function M.newline(cursorPos, pages)
 
     -- TODO: Accomodate for x positions
 
+    -- Shift all lines
     for i = #pages, p, -1 do
         for j = #pages[i], 1, -1 do
             if i == p and j < y + 1 then break end
@@ -71,9 +72,11 @@ function M.newline(cursorPos, pages)
         end
     end
 
-    pages[p][y + 1] = ""
+    local str = pages[p][y]
+    pages[p][y] = string.sub(str, 1, x - 1)
+    pages[p][y + 1] = string.sub(str, x)
+    
     cursorPos = M.cursor.next(pages, cursorPos, false)
-
     return cursorPos, pages
 end
 
