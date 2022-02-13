@@ -53,8 +53,6 @@ function M.newline(cursorPos, pages)
         pages[p][y + 1] = ""
     end
 
-    -- TODO: Accomodate for x positions
-
     -- Shift all lines
     for i = #pages, p, -1 do
         for j = #pages[i], 1, -1 do
@@ -72,6 +70,7 @@ function M.newline(cursorPos, pages)
         end
     end
 
+    --Split line at x position
     local str = pages[p][y]
     pages[p][y] = string.sub(str, 1, x - 1)
     pages[p][y + 1] = string.sub(str, x)
@@ -101,7 +100,6 @@ function M.insert(cursorPos, pages, insStr)
     end
 
     if not inserted then str = str .. insStr end
-    cursorPos.x = cursorPos.x + string.len(insStr)
 
     -- Create new page when entered last possible char on page
     if x > M.pageSize.w - 1 and y > M.pageSize.h - 1 and page > #pages - 1 then
@@ -115,16 +113,23 @@ function M.insert(cursorPos, pages, insStr)
         local line = nil
         local wrapped = nil
         local moveCursor = false
+        local cursorOffset = 0
 
         if lastSpaceIdx then
             line = string.sub(str, 1, lastSpaceIdx - 1)
             wrapped = string.sub(str, lastSpaceIdx + 1)
-            if cursorPos.x > lastSpaceIdx then moveCursor = true end
         else
-            line = string.sub(str, 1, M.pageSize.w)
-            wrapped = string.sub(str, M.pageSize.w + 1)
+            lastSpaceIdx = M.pageSize.w
+            line = string.sub(str, 1, lastSpaceIdx)
+            wrapped = string.sub(str, lastSpaceIdx + 1)
         end
 
+        if cursorPos.x > lastSpaceIdx then
+            moveCursor = true
+            cursorOffset = cursorPos.x - lastSpaceIdx
+        end
+
+        if string.sub(line, #line) == " " then line = string.sub(line, 1, string.len(line) - 1) end
         str = line
 
         if y + 1 > M.pageSize.h then
@@ -134,21 +139,36 @@ function M.insert(cursorPos, pages, insStr)
             newCursorPos.page = page + 1
 
             if page + 1 > #pages then pages = M.newPage(pages) end
-            
+            if pages[newCursorPos.page][newCursorPos.y] and pages[newCursorPos.page][newCursorPos.y] ~= "" and moveCursor == false then
+                wrapped = wrapped .. " "
+            end
+
             newCursorPos, pages = M.insert(newCursorPos, pages, wrapped)
+            newCursorPos.x = cursorOffset
+
             if moveCursor then cursorPos = newCursorPos end
         else
             local newCursorPos = {x = cursorPos.x, y = cursorPos.y, page = cursorPos.page}
             newCursorPos.x = 1
             newCursorPos.y = newCursorPos.y + 1
 
+            if pages[newCursorPos.page][newCursorPos.y] and pages[newCursorPos.page][newCursorPos.y] ~= "" and moveCursor == false then
+                wrapped = wrapped .. " "
+            end
+
             newCursorPos, pages = M.insert(newCursorPos, pages, wrapped)
+            newCursorPos.x = cursorOffset
 
             if moveCursor then cursorPos = newCursorPos end
         end
     end
 
     pages[page][y] = str
+
+    for i = 1, string.len(insStr) do
+        cursorPos = M.cursor.next(pages, cursorPos, false)
+    end
+
     return cursorPos, pages
 end
 
