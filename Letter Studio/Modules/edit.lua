@@ -116,24 +116,36 @@ function M.remove(cursorPos, pages)
             end
         
             pages[prevP][prevY] = pages[prevP][prevY] .. pages[page][y]
-            x = prevWidth + 1
-            y = prevY
-            page = prevP
             
-            cursorPos = {x = x, y = y, page = page}
-            
-            for i = page, #pages do
-                for j = 1, #pages[i] do
-                    if i ~= page or j > y then
-                        if i >= #pages and j >= #pages[i] then
-                            pages[i][j] = nil
-                            break
-                        end
-                    
-                        if j + 1 > M.pageSize.h then
-                            pages[i][j] = pages[i + 1][1]
-                        else
-                            pages[i][j] = pages[i][j + 1]
+            if string.len(pages[prevP][prevY]) > M.pageSize.w then
+                pages[page][y] = ""
+
+                x = prevWidth + 1
+                y = prevY
+                page = prevP
+                
+                cursorPos = {x = x, y = y, page = page}
+                cursorPos, pages = M.wordWrap(cursorPos, pages)
+            else
+                x = prevWidth + 1
+                y = prevY
+                page = prevP
+                
+                cursorPos = {x = x, y = y, page = page}
+                
+                for i = page, #pages do
+                    for j = 1, #pages[i] do
+                        if i ~= page or j > y then
+                            if i >= #pages and j >= #pages[i] then
+                                pages[i][j] = nil
+                                break
+                            end
+                        
+                            if j + 1 > M.pageSize.h then
+                                pages[i][j] = pages[i + 1][1]
+                            else
+                                pages[i][j] = pages[i][j + 1]
+                            end
                         end
                     end
                 end
