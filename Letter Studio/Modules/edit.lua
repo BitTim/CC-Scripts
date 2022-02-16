@@ -19,11 +19,83 @@ function M.newPage(pages)
     return pages
 end
 
+function M.wordWrap(cursorPos, pages)
+    local page, x, y = cursorPos.page, cursorPos.x, cursorPos.y
+    local iP, iX, iY = page, x, y
+    local str = nil
+
+    if pages[page]  == nil or pages[page][y] == nil then
+        return cursorPos, pages
+    end
+
+    str = pages[page][y]
+
+    local tmp = string.sub(str, 1, M.pageSize.w + 1)
+    local lastSpaceIdx = string.find(tmp, " [^ ]*$")
+
+    local line = nil
+    local wrapped = nil
+    local insertSpace = true
+    local moveCursor = false
+
+    if lastSpaceIdx == nil then
+        lastSpaceIdx = M.pageSize.w
+        line = string.sub(str, 1, lastSpaceIdx)
+        insertSpace = false
+    else
+        line = string.sub(str, 1, lastSpaceIdx - 1)
+    end
+
+    if x > lastSpaceIdx then
+        x = x - lastSpaceIdx
+        moveCursor = true
+    end
+
+    pages[page][y] = line
+    wrapped = string.sub(str, lastSpaceIdx + 1)
+
+    y = y + 1
+    if y > M.pageSize.h then
+        page = page + 1
+        y = 1
+
+        if page > #pages then
+            pages = M.newPage(pages)
+        end
+    end
+
+    local nextLine = pages[page][y]
+    if nextLine == nil then nextLine = "" end
+
+    if nextLine ~= "" and insertSpace then
+        wrapped = wrapped .. " "
+    end
+
+    nextLine = wrapped .. nextLine
+
+    cursorPos = {x = x, y = y, page = page}
+    pages[page][y] = nextLine
+
+    if string.len(nextLine) > M.pageSize.w then cursorPos, pages = M.wordWrap(cursorPos, pages) end
+
+    if not moveCursor then cursorPos = {x = iX, y = iY, page = iP} end
+    return cursorPos, pages
+end
+
 --TODO: Add Delete, Cut, Copy and Paste
 
 function M.remove(cursorPos, pages)
     local page, x, y = cursorPos.page, cursorPos.x, cursorPos.y
     
+    if x > M.pageSize.w then
+        x = 1
+        y = y + 1
+
+        if y > M.pageSize.h then
+            page = page + 1
+        end
+    end
+
     if x < 2 then
         repeat
             if y <= 1 and page <= 1 then break end
@@ -39,7 +111,8 @@ function M.remove(cursorPos, pages)
     
             local prevWidth = M.cursor.getWidth(pages, prevP, prevY)
             if prevWidth >= M.pageSize.w then
-                -- Case 3
+                prevWidth = prevWidth - 1
+                pages[prevP][prevY] = string.sub(pages[prevP][prevY], 1, prevWidth)
             end
         
             pages[prevP][prevY] = pages[prevP][prevY] .. pages[page][y]
@@ -66,7 +139,7 @@ function M.remove(cursorPos, pages)
                 end
             end
             
-            -- Wrap with newline
+            -- TODO: Wrap with newline
         until true
     else
         local str = pages[page][y]
@@ -127,7 +200,7 @@ function M.insert(cursorPos, pages, insStr)
     local str = ""
     local inserted = false
 
-    if insStr == nil then return pages end
+    if insStr == nil then return cursorPos, pages end
 
     if pages[page] and pages[page][y] then
         str = pages[page][y]
@@ -148,64 +221,12 @@ function M.insert(cursorPos, pages, insStr)
         pages = M.newPage(pages)
     end
 
+    pages[page][y] = str
+    
     -- Wrap if longer than line
     if string.len(str) > M.pageSize.w then
-        local tmp = string.sub(str, 1, M.pageSize.w + 1)
-        local lastSpaceIdx = string.find(tmp, " [^ ]*$")
-        local line = nil
-        local wrapped = nil
-        local moveCursor = false
-        local cursorOffset = 0
-
-        if lastSpaceIdx then
-            line = string.sub(str, 1, lastSpaceIdx - 1)
-            wrapped = string.sub(str, lastSpaceIdx + 1)
-        else
-            lastSpaceIdx = M.pageSize.w
-            line = string.sub(str, 1, lastSpaceIdx)
-            wrapped = string.sub(str, lastSpaceIdx + 1)
-        end
-
-        if cursorPos.x > lastSpaceIdx then
-            moveCursor = true
-            cursorOffset = cursorPos.x - lastSpaceIdx
-        end
-
-        if string.sub(line, #line) == " " then line = string.sub(line, 1, string.len(line) - 1) end
-        str = line
-
-        if y + 1 > M.pageSize.h then
-            local newCursorPos = {x = cursorPos.x, y = cursorPos.y, page = cursorPos.page}
-            newCursorPos.x = 1
-            newCursorPos.y = 1
-            newCursorPos.page = page + 1
-
-            if page + 1 > #pages then pages = M.newPage(pages) end
-            if pages[newCursorPos.page][newCursorPos.y] and pages[newCursorPos.page][newCursorPos.y] ~= "" and moveCursor == false then
-                wrapped = wrapped .. " "
-            end
-
-            newCursorPos, pages = M.insert(newCursorPos, pages, wrapped)
-            newCursorPos.x = cursorOffset
-
-            if moveCursor then cursorPos = newCursorPos end
-        else
-            local newCursorPos = {x = cursorPos.x, y = cursorPos.y, page = cursorPos.page}
-            newCursorPos.x = 1
-            newCursorPos.y = newCursorPos.y + 1
-
-            if pages[newCursorPos.page][newCursorPos.y] and pages[newCursorPos.page][newCursorPos.y] ~= "" and moveCursor == false then
-                wrapped = wrapped .. " "
-            end
-
-            newCursorPos, pages = M.insert(newCursorPos, pages, wrapped)
-            newCursorPos.x = cursorOffset
-
-            if moveCursor then cursorPos = newCursorPos end
-        end
+        cursorPos, pages = M.wordWrap(cursorPos, pages)
     end
-
-    pages[page][y] = str
 
     for i = 1, string.len(insStr) do
         cursorPos = M.cursor.next(pages, cursorPos, false)
