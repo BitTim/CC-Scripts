@@ -150,8 +150,6 @@ function M.remove(cursorPos, pages)
                     end
                 end
             end
-            
-            -- TODO: Wrap with newline
         until true
     else
         local str = pages[page][y]
@@ -234,7 +232,7 @@ function M.insert(cursorPos, pages, insStr)
     end
 
     pages[page][y] = str
-    
+
     -- Wrap if longer than line
     if string.len(str) > M.pageSize.w then
         cursorPos, pages = M.wordWrap(cursorPos, pages)
