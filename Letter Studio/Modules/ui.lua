@@ -1,5 +1,8 @@
 local titleBarColor = colors.gray
 local titleBarTextColor = colors.white
+local titleBarClickedColor = colors.blue
+local titleBarClickedTextColor = colors.white
+
 local backgroundColor = colors.lightBlue
 local foregroundColor = colors.white
 local shadowColor = colors.gray
@@ -14,11 +17,27 @@ M.pageSize = nil
 M.pageSpacing = 0
 M.pagePos = nil
 
+M.menuBar = {}
+
 function M.init(util, pageSize, pageSpacing, pagePos)
     M.util = util
     M.pageSize = pageSize
     M.pageSpacing = pageSpacing
     M.pagePos = pagePos
+end
+
+function M.addMenu(title)
+	M.menuBar[#M.menuBar + 1] = {title = title, entries = {}}
+	return #M.menuBar
+end
+
+function M.addEntry(title, menuID, action)
+	M.menuBar[menuID].entries[#M.menuBar[menuID].entries + 1] = {title = title, action = action}
+	return #M.menuBar[menuID].entries
+end
+
+function M.removeEntry(entryID, menuID)
+	M.menuBar[menuID].entries[entryID] = nil
 end
 
 
@@ -27,10 +46,20 @@ function M.drawTitleBar()
     local w, _ = term.getSize()
     term.setCursorPos(1, 1)
 
+	local menu = fixedMenu
+	
+	
+	for i = 1, #menu do
+		for j = 1, #menu[i].entries
+	end
+	
     term.setBackgroundColor(titleBarColor)
     term.setTextColor(titleBarTextColor)
-    term.write(M.util.padText("New   Load   Save", w))
-    term.setBackgroundColor(colors.black)
+    
+	term.write("File ")
+	term.write("Layers ")
+    
+	term.setBackgroundColor(colors.black)
     term.setTextColor(colors.white)
 end
 
