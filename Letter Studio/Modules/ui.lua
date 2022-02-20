@@ -1,4 +1,5 @@
 local titleBarColor = colors.gray
+local titleBarTextColor = colors.white
 local backgroundColor = colors.lightBlue
 local foregroundColor = colors.white
 local shadowColor = colors.gray
@@ -27,8 +28,10 @@ function M.drawTitleBar()
     term.setCursorPos(1, 1)
 
     term.setBackgroundColor(titleBarColor)
-    term.write(M.util.padText("", w))
+    term.setTextColor(titleBarTextColor)
+    term.write(M.util.padText("New   Load   Save", w))
     term.setBackgroundColor(colors.black)
+    term.setTextColor(colors.white)
 end
 
 function M.drawBackground(pageOffset)

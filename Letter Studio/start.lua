@@ -7,7 +7,7 @@ local w, h = term.getSize()
 
 local pageSize = {w = 25, h = 21}
 local pageSpacing = 2
-local pagePos = math.floor((w - pageSize.w) / 2)
+local pagePos = math.ceil((w - pageSize.w) / 2)
 
 local pages = {}
 local cursorPos = {page = 1, x = 1, y = 1}
