@@ -9,7 +9,8 @@ local pageSize = {w = 25, h = 21}
 local pageSpacing = 2
 local pagePos = math.ceil((w - pageSize.w) / 2)
 
-local pages = {}
+local layers = {{color = colors.black, title = "Black", pages = {}}}
+local pages = layers[1]
 local cursorPos = {page = 1, x = 1, y = 1}
 
 local pageOffset = 1
@@ -17,20 +18,38 @@ local scrollPos = -(pageOffset + 1)
 
 local control = false
 
+local expandedID = 0
+local clickedID = 0
+
 term.clear()
 
 cursor.init(pageSize)
 edit.init(util, pageSize, cursor)
 ui.init(util, pageSize, pageSpacing, pagePos)
 
+ui.addMenu("File")
+ui.addMenu("Layers")
+
+ui.addEntry("New", 1, nil)
+ui.addEntry("Save", 1, nil)
+ui.addEntry("Load", 1, nil)
+ui.addEntry("Exit", 1, nil)
+
+ui.addEntry("Add", 2, nil)
+ui.addEntry("Edit", 2, nil)
+ui.addEntry("Clear", 2, nil)
+ui.addEntry("Remove", 2, nil)
+
+ui.addEntry(layers[1].title, 2, nil, layers[1].color)
+
 pages = edit.newPage(pages)
 
 while true do
-    ui.draw(pageOffset, cursorPos, scrollPos, pages)
+    ui.draw(pageOffset, cursorPos, scrollPos, pages, expandedID, clickedID)
     cursor.setVisualCursor(pages, cursorPos, pagePos, scrollPos, pageOffset, pageSpacing)
 
     local _, y = term.getCursorPos()
-    if y < 2 then term.setCursorBlink(false)
+    if y < 2 or expandedID ~= 0 then term.setCursorBlink(false)
     else term.setCursorBlink(true) end
 
     local eventData = table.pack(os.pullEventRaw())
@@ -96,7 +115,45 @@ while true do
     elseif e == "mouse_click" then
         local btn, x, y = eventData[2], eventData[3], eventData[4]
         if btn == 1 then
-            cursorPos = cursor.setPos(pages, cursor.fromScreenSpace(x, y, pagePos, scrollPos, pageOffset, pageSpacing))
+            local unhandled = true
+            
+            if y <= 1 or expandedID ~= 0 then
+                unhandled = false
+                
+                if expandedID > 0 then
+                    if x >= ui.menuBar[expandedID].x and x <= ui.menuBar[expandedID].x + ui.menuBar[expandedID].w then
+                        if y > #ui.menuBar[expandedID].entries + 1 then
+                            expandedID = 0
+                            clickedID = 0
+                            unhandled = true
+                        elseif y > 1 then
+                            clickedID = y - 1
+                        end
+                    elseif y > 1 then
+                        expandedID = 0
+                        clickedID = 0
+                        unhandled = true
+                    end
+                end
+                
+                if y <= 1 then
+                    for i = 1, #ui.menuBar do
+                        if x >= ui.menuBar[i].x and x <= ui.menuBar[i].x + ui.menuBar[i].w then
+                            expandedID = i
+                            break
+                        end
+                    end
+                end
+            end
+
+            if unhandled then
+                if expandedID > 0 then
+                    expandedID = 0
+                    clickedID = 0
+                end
+                
+                cursorPos = cursor.setPos(pages, cursor.fromScreenSpace(x, y, pagePos, scrollPos, pageOffset, pageSpacing))
+            end
         end
 
     elseif e == "mouse_scroll" then
