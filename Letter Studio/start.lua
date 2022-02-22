@@ -3,6 +3,7 @@ local ui = require("Modules/ui")
 local edit = require("Modules/edit")
 local cursor = require("Modules/cursor")
 local file = require("Modules/file")
+local fsdiag = require("Modules/ThirdParty/fileDialog")
 
 local w, h = term.getSize()
 
@@ -33,11 +34,28 @@ local function exit()
     running = false
 end
 
+local function getLayers()
+    return layers
+end
+
+local function setLayers(newLayers)
+    layers = newLayers
+end
+
+local function getCursorPos()
+    return cursorPos
+end
+
+local function setCursorPos(newCursorPos)
+    cursorPos = newCursorPos
+end
+
 term.clear()
 
 cursor.init(pageSize)
 edit.init(util, pageSize, cursor)
 ui.init(util, pageSize, pageSpacing, pagePos)
+file.init(fsdiag, setLayers, getLayers)
 
 ui.addMenu("File")
 
