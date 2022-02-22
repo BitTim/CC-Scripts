@@ -81,14 +81,14 @@ function M.drawMenuBar(expandedID, clickedID)
             term.setTextColor(menuBarTextColor)
         end
 
-        term.setCursorPos(M.menuBar[#M.menuBar].x, 1)
+        term.setCursorPos(M.menuBar[i].x, 1)
         term.write(M.menuBar[i].title .. string.rep(" ", menuSpacing))
 	end
 
     term.setBackgroundColor(menuBarColor)
     term.setTextColor(menuBarTextColor)
 
-    term.setCursorPos(M.menuBar[#M.menuBar].x + M.menuBar[#M.menuBar].w + 1, 1)
+    term.setCursorPos(M.menuBar[#M.menuBar].x + M.menuBar[#M.menuBar].w, 1)
     term.write(M.util.padText("", w))
 
 	term.setBackgroundColor(colors.black)
