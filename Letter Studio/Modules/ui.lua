@@ -36,10 +36,10 @@ function M.addMenu(title)
 	return #M.menuBar
 end
 
-function M.addEntry(title, menuID, action, textColor)
-    if textColor == nil then textColor = menuBarTextColor end
+function M.addEntry(title, menuID, action, color)
+    if color == nil then textColor = menuBarTextColor end
 
-	M.menuBar[menuID].entries[#M.menuBar[menuID].entries + 1] = {title = title, color = textColor, action = action}
+	M.menuBar[menuID].entries[#M.menuBar[menuID].entries + 1] = {title = title, color = color, action = action}
 
     for j = 1, #M.menuBar[menuID].entries do
         if string.len(M.menuBar[menuID].entries[j].title) + menuSpacing > M.menuBar[menuID].w then
@@ -68,7 +68,11 @@ function M.drawMenuBar(expandedID, clickedID)
                     term.setTextColor(menuBarClickedTextColor)
                 else
                     term.setBackgroundColor(menuBarColor)
-                    term.setTextColor(M.menuBar[i].entries[j].color)
+
+                    local col = M.menuBar[i].entries[j].color
+                    if col == nil then col = textColor end
+
+                    term.setTextColor(col)
                 end
 
                 term.write(M.util.padText(M.menuBar[i].entries[j].title, M.menuBar[i].w))
@@ -82,7 +86,7 @@ function M.drawMenuBar(expandedID, clickedID)
         end
 
         term.setCursorPos(M.menuBar[i].x, 1)
-        term.write(M.menuBar[i].title .. string.rep(" ", menuSpacing))
+        term.write(M.util.padText(M.menuBar[i].title, M.menuBar[i].w) .. string.rep(" ", menuSpacing))
 	end
 
     term.setBackgroundColor(menuBarColor)
