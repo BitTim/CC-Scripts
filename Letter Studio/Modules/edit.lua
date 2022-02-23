@@ -20,7 +20,7 @@ function M.newPage(pages)
 end
 
 function M.wordWrap(cursorPos, pages)
-    local page, x, y = cursorPos.page, cursorPos.x, cursorPos.y
+    local layer, page, x, y = curosrPos.layer, cursorPos.page, cursorPos.x, cursorPos.y
     local iP, iX, iY = page, x, y
     local str = nil
 
@@ -73,19 +73,19 @@ function M.wordWrap(cursorPos, pages)
 
     nextLine = wrapped .. nextLine
 
-    cursorPos = {x = x, y = y, page = page}
+    cursorPos = {x = x, y = y, page = page, layer = layer}
     pages[page][y] = nextLine
 
     if string.len(nextLine) > M.pageSize.w then cursorPos, pages = M.wordWrap(cursorPos, pages) end
 
-    if not moveCursor then cursorPos = {x = iX, y = iY, page = iP} end
+    if not moveCursor then cursorPos = {x = iX, y = iY, page = iP, layer = layer} end
     return cursorPos, pages
 end
 
 --TODO: Add Delete, Cut, Copy and Paste
 
 function M.remove(cursorPos, pages)
-    local page, x, y = cursorPos.page, cursorPos.x, cursorPos.y
+    local layer, page, x, y = cursorPos.layer, cursorPos.page, cursorPos.x, cursorPos.y
     
     if x > M.pageSize.w then
         x = 1
@@ -124,14 +124,14 @@ function M.remove(cursorPos, pages)
                 y = prevY
                 page = prevP
                 
-                cursorPos = {x = x, y = y, page = page}
+                cursorPos = {x = x, y = y, page = page, layer = layer}
                 cursorPos, pages = M.wordWrap(cursorPos, pages)
             else
                 x = prevWidth + 1
                 y = prevY
                 page = prevP
                 
-                cursorPos = {x = x, y = y, page = page}
+                cursorPos = {x = x, y = y, page = page, layer = layer}
                 
                 for i = page, #pages do
                     for j = 1, #pages[i] do

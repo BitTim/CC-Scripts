@@ -12,8 +12,7 @@ local pageSpacing = 2
 local pagePos = math.ceil((w - pageSize.w) / 2)
 
 local layers = {{color = colors.black, title = "Black", pages = {}}}
-local pages = layers[1]
-local cursorPos = {page = 1, x = 1, y = 1}
+local cursorPos = {layer = 1, page = 1, x = 1, y = 1}
 
 local pageOffset = 1
 local scrollPos = -(pageOffset + 1)
@@ -55,7 +54,7 @@ term.clear()
 cursor.init(pageSize)
 edit.init(util, pageSize, cursor)
 ui.init(util, pageSize, pageSpacing, pagePos)
-file.init(fsdiag, setLayers, getLayers)
+file.init(fsdiag, setLayers, getLayers, setCursorPos, getCursorPos)
 
 ui.addMenu("File")
 
@@ -73,12 +72,11 @@ ui.addEntry("Clear", 2, nil)
 ui.addEntry("Remove", 2, nil)
 
 ui.addEntry(layers[1].title, 2, nil, layers[1].color)
-
-pages = edit.newPage(pages)
+layers[1].pages = edit.newPage(layers[1])
 
 while running do
-    ui.draw(pageOffset, cursorPos, scrollPos, pages, expandedID, clickedID)
-    cursor.setVisualCursor(pages, cursorPos, pagePos, scrollPos, pageOffset, pageSpacing)
+    ui.draw(pageOffset, cursorPos, scrollPos, layers, expandedID, clickedID)
+    cursor.setVisualCursor(layers[cursorPos.layer].pages, cursorPos, pagePos, scrollPos, pageOffset, pageSpacing)
 
     local _, y = term.getCursorPos()
     if y < 2 or expandedID ~= 0 then term.setCursorBlink(false)
@@ -90,7 +88,7 @@ while running do
     if e == "char" then
         if not control then
             local c = eventData[2]
-            cursorPos, pages = edit.insert(cursorPos, pages, c)
+            cursorPos, layers[cursorPos.layer].pages = edit.insert(cursorPos, layers[cursorPos.layer].pages, c)
             scrollPos = cursor.jumpToCursor(cursorPos, pagePos, scrollPos, pageOffset, pageSpacing)
         end
 
@@ -101,30 +99,30 @@ while running do
             control = true
 
         elseif key == keys.up and not control then
-            cursorPos = cursor.prev(pages, cursorPos, true)
+            cursorPos = cursor.prev(layers[cursorPos.layer].pages, cursorPos, true)
 
         elseif key == keys.down and not control then
-            cursorPos = cursor.next(pages, cursorPos, true)
+            cursorPos = cursor.next(layers[cursorPos.layer].pages, cursorPos, true)
 
         elseif key == keys.left and not control then
-            cursorPos = cursor.prev(pages, cursorPos, false)
+            cursorPos = cursor.prev(layers[cursorPos.layer].pages, cursorPos, false)
 
         elseif key == keys.right and not control then
-            cursorPos = cursor.next(pages, cursorPos, false)
+            cursorPos = cursor.next(layers[cursorPos.layer].pages, cursorPos, false)
 
         elseif key == keys.home then
             cursorPos = cursor.jumpBegin(cursorPos, control)
 
         elseif key == keys["end"] then
-            cursorPos = cursor.jumpEnd(pages, cursorPos, control)
+            cursorPos = cursor.jumpEnd(layers[cursorPos.layer].pages, cursorPos, control)
             
 
 
         elseif key == keys.enter and not control then
-            cursorPos, pages = edit.newline(cursorPos, pages)
+            cursorPos, layers[cursorPos.layer].pages = edit.newline(cursorPos, layers[cursorPos.layer].pages)
 
         elseif key == keys.backspace and not control then
-            cursorPos, pages = edit.remove(cursorPos, pages)
+            cursorPos, layers[cursorPos.layer].pages = edit.remove(cursorPos, layers[cursorPos.layer].pages)
 
         elseif key == keys.delete and not control then
 
@@ -141,7 +139,7 @@ while running do
 
     elseif e == "paste" then
         local str = eventData[2]
-        cursorPos, pages = edit.insert(cursorPos, pages, str)
+        cursorPos, layers[cursorPos.layer].pages = edit.insert(cursorPos, layers[cursorPos.layer].pages, str)
         scrollPos = cursor.jumpToCursor(cursorPos, pagePos, scrollPos, pageOffset, pageSpacing)
 
     elseif e == "mouse_click" then
@@ -188,7 +186,7 @@ while running do
                     clickedID = 0
                 end
                 
-                cursorPos = cursor.setPos(pages, cursor.fromScreenSpace(x, y, pagePos, scrollPos, pageOffset, pageSpacing))
+                cursorPos = cursor.setPos(layers[cursorPos.layer].pages, cursor.fromScreenSpace(x, y, pagePos, scrollPos, pageOffset, pageSpacing))
             end
         end
 
@@ -197,7 +195,14 @@ while running do
         if scrollDir == 0 then scrollDir = -1 end
         scrollPos = scrollPos + scrollDir
 
-        local maxScroll = util.calcMaxOffset(#pages, pageSize, pageSpacing)
+        local nPages = 1
+        for l = 1, #layers do
+            if #layers[l].pages > nPages then
+                nPages = #layers[l].pages
+            end
+        end
+
+        local maxScroll = util.calcMaxOffset(nPages, pageSize, pageSpacing)
 
         if scrollPos < -(pageOffset + 1) then scrollPos = -(pageOffset + 1) end
         if scrollPos > maxScroll then scrollPos = maxScroll end

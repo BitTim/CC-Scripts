@@ -9,8 +9,6 @@ local backgroundColor = colors.lightBlue
 local foregroundColor = colors.white
 local shadowColor = colors.gray
 
-local textColor = colors.black
-
 local M = {}
 
 M.util = nil
@@ -37,7 +35,7 @@ function M.addMenu(title)
 end
 
 function M.addEntry(title, menuID, action, color)
-    if color == nil then textColor = menuBarTextColor end
+    if color == nil then color = menuBarTextColor end
 
 	M.menuBar[menuID].entries[#M.menuBar[menuID].entries + 1] = {title = title, color = color, action = action}
 
@@ -70,7 +68,7 @@ function M.drawMenuBar(expandedID, clickedID)
                     term.setBackgroundColor(menuBarColor)
 
                     local col = M.menuBar[i].entries[j].color
-                    if col == nil then col = textColor end
+                    if col == nil then col = menuBarTextColor end
 
                     term.setTextColor(col)
                 end
@@ -131,51 +129,55 @@ function M.drawCursorPos(cursorPos)
     term.setBackgroundColor(colors.black)
 end
 
-function M.drawPages(pageOffset, scrollPos, pages)
+function M.drawPages(pageOffset, scrollPos, layers, layer)
     local _, h = term.getSize()
 
-    for y = pageOffset + 1, h do
-        local pos = M.util.offsetToPos(scrollPos + (y - 1), M.pageSize, M.pageSpacing)
-        term.setCursorPos(M.pagePos, y)
+    for l = 1, #layers do
+        for y = pageOffset + 1, h do
+            local pos = M.util.offsetToPos(scrollPos + (y - 1), M.pageSize, M.pageSpacing)
+            term.setCursorPos(M.pagePos, y)
 
-        if pos.y > M.pageSize.h then
-            if pos.y == M.pageSize.h + 1 then
-                term.setTextColor(shadowColor)
-                term.setBackgroundColor(backgroundColor)
+            if pos.y > M.pageSize.h then
+                if pos.y == M.pageSize.h + 1 then
+                    term.setTextColor(shadowColor)
+                    term.setBackgroundColor(backgroundColor)
 
-                term.write(" " .. string.rep("\127", M.pageSize.w))
+                    term.write(" " .. string.rep("\127", M.pageSize.w))
+
+                    term.setBackgroundColor(colors.black)
+                    term.setTextColor(colors.white)
+                end
+            else
+                term.setTextColor(layers[l].color)
+                term.setBackgroundColor(colors.white)
+
+                if layers[l].pages[pos.page] == nil or layers[l].pages[pos.page][pos.y] == nil then
+                    term.write(M.util.padText("", M.pageSize.w))
+                else
+                    term.write(M.util.padText(layers[l].pages[pos.page][pos.y], M.pageSize.w))
+                end
+
+                if pos.y > 1 then
+                    term.setTextColor(shadowColor)
+                    term.setBackgroundColor(backgroundColor)
+
+                    term.write("\127")
+                end
 
                 term.setBackgroundColor(colors.black)
-                term.setTextColor(colors.white)
             end
-        else
-            term.setTextColor(colors.black)
-            term.setBackgroundColor(colors.white)
-
-            if pages[pos.page] == nil or pages[pos.page][pos.y] == nil then
-                term.write(M.util.padText("", M.pageSize.w))
-            else
-                term.write(M.util.padText(pages[pos.page][pos.y], M.pageSize.w))
-            end
-
-            if pos.y > 1 then
-                term.setTextColor(shadowColor)
-                term.setBackgroundColor(backgroundColor)
-
-                term.write("\127")
-            end
-
-            term.setBackgroundColor(colors.black)
         end
     end
 
-    term.setTextColor(textColor)
+    print("")
+    print(textutils.serialise(layers[layer]))
+    term.setTextColor(layers[layer].color)
 end
 
 function M.draw(pageOffset, cursorPos, scrollPos, layers, expandedID, clickedID)
     M.drawBackground(pageOffset)
     M.drawCursorPos(cursorPos)
-    M.drawPages(pageOffset, scrollPos, layers)
+    M.drawPages(pageOffset, scrollPos, layers, cursorPos.layer)
     M.drawMenuBar(expandedID, clickedID)
 end
 
