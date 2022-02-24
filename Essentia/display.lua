@@ -4,12 +4,13 @@ local modem = peripheral.find("modem")
 local sModem = ecnet.wrap(modem)
 
 local dns = "c762:b905:a388:cbb6:f317"
+local server = "essentia.ds"
 
 --Init Shell
 local run = true
 
 term.setTextColor(colors.yellow)
-print("Client v1.0")
+print("Essentia Client v1.0")
 
 --Connect to DNS
 term.setTextColor(colors.lightGray)
@@ -94,6 +95,29 @@ while run do
     if tokens[1] == "exit" then
         --Close Program
         break
+
+    elseif tokens[1] == "open" then
+        if tokens[2] then
+            local p = {head = "OPEN", id = tonumber(tokens[2])}
+            local msg = textutils.serialize(p)
+
+            local serverAddr = lookup(server)
+            if serverAddr ~= false then
+                sendPacketForReply(serverAddr, msg, "OPEN")
+            end
+        end
+
+    elseif tokens[1] == "close" then
+        if tokens[2] then
+            local p = {head = "CLOSE", id = tonumber(tokens[2])}
+            local msg = textutils.serialize(p)
+
+            local serverAddr = lookup(server)
+            if serverAddr ~= false then
+                sendPacketForReply(serverAddr, msg, "CLOSE")
+            end
+        end
+
     else
         term.setTextColor(color.red)
         print("Invalid Command")
