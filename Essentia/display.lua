@@ -3,7 +3,7 @@ local ecnet = require("api/ecnet")
 local modem = peripheral.find("modem")
 local sModem = ecnet.wrap(modem)
 
-local dns = "c762:b905:a388:cbb6:f317"
+local dns = "02ed:16d0:a091:c3c5:84d6"
 local server = "essentia.ds"
 
 --Init Shell
@@ -96,25 +96,27 @@ while run do
         --Close Program
         break
 
-    elseif tokens[1] == "open" then
-        if tokens[2] then
-            local p = {head = "OPEN", id = tonumber(tokens[2])}
+    elseif tokens[1] == "flow" then
+        if tokens[2] and tokens[3] then
+            local p = {head = "FLOW", id = tonumber(tokens[2]), amount = tonumber(tokens[3])}
             local msg = textutils.serialize(p)
 
             local serverAddr = lookup(server)
             if serverAddr ~= false then
-                sendPacketForReply(serverAddr, msg, "OPEN")
-            end
-        end
-
-    elseif tokens[1] == "close" then
-        if tokens[2] then
-            local p = {head = "CLOSE", id = tonumber(tokens[2])}
-            local msg = textutils.serialize(p)
-
-            local serverAddr = lookup(server)
-            if serverAddr ~= false then
-                sendPacketForReply(serverAddr, msg, "CLOSE")
+                local rep = sendPacketForReply(serverAddr, msg, "FLOW")
+                if rep == -1 then
+                    term.setTextColor(colors.red)
+                    print("Failed")
+                    term.setTextColor(colors.lightGray)
+                elseif rep.status == "OK" then
+                    term.setTextColor(colors.green)
+                    print("Success!")
+                    term.setTextColor(colors.lightGray)
+                else
+                    term.setTextColor(colors.red)
+                    print("Failed")
+                    term.setTextColor(colors.lightGray)
+                end
             end
         end
 

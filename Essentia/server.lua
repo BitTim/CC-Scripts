@@ -3,7 +3,7 @@ local ecnet = require("api/ecnet")
 local modem = peripheral.find("modem")
 local sModem = ecnet.wrap(modem)
 
-local dns = "c762:b905:a388:cbb6:f317"
+local dns = "02ed:16d0:a091:c3c5:84d6"
 
 --Create Variables
 local title = "Essentia Server"
@@ -101,13 +101,30 @@ local responseOK = function(s, head)
     log("Response", "\"OK\" sent to: " .. s)
 end
 
+local responseFAIL = function(s, head)
+    --Create reply packet
+    local p = {head = head, status = "FAIL"}
+    local reply = textutils.serialize(p)
+        
+    --Send reply packet
+    sModem.connect(s, 3)
+    sModem.send(s, reply)
+
+    log("Response", "\"FAIL\" sent to: " .. s)
+end
+
 local function broadcast(receivers, msg, head)
     local statuses = {}
 
     for i = 1, #receivers do
         log("Broadcast", "Sending to: " .. receivers[i])
         local address = lookup(receivers[i])
-        statuses[#statuses] = sendPacketForReply(address, msg, head)
+
+        local reply = sendPacketForReply(address, msg, head)
+        if reply == -1 then reply = {status = "FAIL"} end
+        statuses[#statuses + 1] = reply.status
+
+        if reply.status == "OK" then break end
     end
 
     return statuses
@@ -124,21 +141,33 @@ while true do
 
     log("Main", "Received packet with head: " .. p.head)
     
+    local failed = false
     --Check Packet header
-    if p.head == "OPEN" then
-        log("Open", "Opening id: " .. p.id)
-        local newP = {head = "OPEN", id = p.id}
+    if p.head == "FLOW" then
+        log("Flow", "Flowing id " .. p.id .. " x" .. p.amount)
+        local newP = {head = "FLOW", id = p.id}
         local msg = textutils.serialize(newP)
 
-        broadcast(controllerDomains, msg, "OPEN")
-        responseOK(s, p.head)
+        for i = 1, p.amount do
+            local statuses = broadcast(controllerDomains, msg, "FLOW")
+            
+            local ok = false
+            for st = 1, #statuses do
+                if statuses[st] == "OK" then
+                    ok = true
+                    break
+                end
+            end
 
-    elseif p.head == "CLOSE" then
-        log("Close", "Closing id: " .. p.id)
-        local newP = {head = "CLOSE", id = p.id}
-        local msg = textutils.serialize(newP)
+            if ok == false then
+                responseFAIL(s, p.head)
+                failed = true
+                break
+            end
+        end
 
-        broadcast(controllerDomains, msg, "CLOSE")
-        responseOK(s, p.head)
+        if failed == false then
+            responseOK(s, p.head)
+        end
     end
 end

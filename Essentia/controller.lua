@@ -10,7 +10,7 @@ local servedIDs = {}
 local outputSide = "back"
 
 --Internal variables
-local activeIDs = 0
+local activeID = 0
 
 --Set title of shell
 term.setTextColor(colors.yellow)
@@ -51,12 +51,23 @@ local responseOK = function(s, head)
     log("Response", "\"OK\" sent to: " .. s)
 end
 
+local responseFAIL = function(s, head)
+    --Create reply packet
+    local p = {head = head, status = "FAIL"}
+    local reply = textutils.serialize(p)
+        
+    --Send reply packet
+    sModem.connect(s, 3)
+    sModem.send(s, reply)
+
+    log("Response", "\"FAIL\" sent to: " .. s)
+end
 
 
 --Update function
 local function update()
-    redstone.setBundledOutput(outputSide, activeIDs)
-    log("Update", "Set redstone output to var: " .. activeIDs)
+    redstone.setBundledOutput(outputSide, activeID)
+    log("Update", "Set redstone output to var: " .. activeID)
 end
 
 --Main Loop
@@ -69,28 +80,24 @@ while true do
     log("Main", "Received packet with head: " .. p.head)
     
     --Check Packet header
-    if p.head == "OPEN" then
+    if p.head == "FLOW" then
         local lid = getLocalID(p.id)
         log("Open", "Converted ID to local ID: " .. p.id .. " -> " .. lid)
 
         if lid ~= 0 then
-            activeIDs = activeIDs + (2 ^ (lid - 1))
+            activeID = 2 ^ (lid - 1)
+            update()
+            sleep(0.1)
+
+            activeID = 0
+            update()
+            sleep(5) --TODO: Tweak Cooldowns
+
+            responseOK(s, p.head)
+        else
+            responseFAIL(s, p.head)
         end
-        log("Open", "Applied change to output var: " .. activeIDs)
 
-        responseOK(s, p.head)
-        update()
-    
-    elseif p.head == "CLOSE" then
-        local lid = getLocalID(p.id)
-        log("Close", "Converted ID to local ID: " .. p.id .. " -> " .. lid)
-
-        if lid ~= 0 then
-            activeIDs = activeIDs - (2 ^ (lid - 1))
-        end
-        log("Close", "Applied change to output var: " .. activeIDs)
-
-        responseOK(s, p.head)
-        update()
+        log("Open", "Applied change to output var: " .. activeID)
     end
 end
