@@ -49,14 +49,14 @@ else
 end
 
 --Utility functions
-local sendPacketForReply = function(address, msg, head)
+local sendPacketForReply = function(address, msg, head, timeout)
     --Connect to Server
     local ret = sModem.connect(address, 3)
     if not ret then return -1 end
 
     --Send packet and wait for reply
     sModem.send(address, msg)
-    local s, p = sModem.receive(address, 3)
+    local s, p = sModem.receive(address, timeout)
         
     --Check for timeout
     if s == nil then
@@ -113,14 +113,14 @@ local responseFAIL = function(s, head)
     log("Response", "\"FAIL\" sent to: " .. s)
 end
 
-local function broadcast(receivers, msg, head)
+local function broadcast(receivers, msg, head, timeout)
     local statuses = {}
 
     for i = 1, #receivers do
         log("Broadcast", "Sending to: " .. receivers[i])
         local address = lookup(receivers[i])
 
-        local reply = sendPacketForReply(address, msg, head)
+        local reply = sendPacketForReply(address, msg, head, timeout)
         if reply == -1 then reply = {status = "FAIL"} end
         statuses[#statuses + 1] = reply.status
 
@@ -149,7 +149,7 @@ while true do
         local msg = textutils.serialize(newP)
 
         for i = 1, p.amount do
-            local statuses = broadcast(controllerDomains, msg, "FLOW")
+            local statuses = broadcast(controllerDomains, msg, "FLOW", 10)
             
             local ok = false
             for st = 1, #statuses do

@@ -32,14 +32,14 @@ end
 -- Functions
 -- ================================
 
-local sendPacketForReply = function(address, msg, head)
+local sendPacketForReply = function(address, msg, head, timeout)
     --Connect to Server
     local ret = sModem.connect(address, 3)
     if not ret then return -1 end
 
     --Send packet and wait for reply
     sModem.send(address, msg)
-    local s, p = sModem.receive(address, 3)
+    local s, p = sModem.receive(address, timeout)
         
     --Check for timeout
     if s == nil then
@@ -103,7 +103,7 @@ while run do
 
             local serverAddr = lookup(server)
             if serverAddr ~= false then
-                local rep = sendPacketForReply(serverAddr, msg, "FLOW")
+                local rep = sendPacketForReply(serverAddr, msg, "FLOW", 10)
                 if rep == -1 then
                     term.setTextColor(colors.red)
                     print("Failed")
