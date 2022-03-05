@@ -1,13 +1,16 @@
 --Create Secure Modem
 local ecnet = require("api/ecnet")
-local modem = peripheral.find("modem")
+local modem = peripheral.wrap("top")
 local sModem = ecnet.wrap(modem)
 
 --Create Variables
 local title = "Essentia Controller"
 local version = "v1.0"
-local servedIDs = {}
 local outputSide = "back"
+
+local servedAspects = {}
+local nbtPeripheralTags = {}
+local nbtPeripherals = {}
 
 --Internal variables
 local activeID = 0
@@ -28,12 +31,17 @@ end
 --Print Address
 log("Address", ecnet.address)
 
+--Wrap all NBT Peripherals
+for i = 1, #nbtPeripheralTags do
+    nbtPeripherals[i] = peripheral.wrap(nbtPeripheralTags[i])
+end
+
 --Utility functions
-local function getLocalID(id)
+local function getLocalID(aspect)
     local localID = 0
 
-    for i = 1, #servedIDs do
-        if servedIDs[i] == id then localID = i end
+    for i = 1, #servedAspects do
+        if servedAspects[i] == aspect then localID = i end
     end
 
     return localID
@@ -65,9 +73,13 @@ end
 
 
 --Update function
-local function update()
-    redstone.setBundledOutput(outputSide, activeID)
-    log("Update", "Set redstone output to var: " .. activeID)
+local function sendPulse(id)
+    local rid = 2 ^ (id - 1)
+    redstone.setBundledOutput(outputSide, rid)
+    sleep(0.1)
+    restone.setBundledOutput(outputSide, 0)
+
+    log("SendPulse", "Setting redstone output to: " .. id)
 end
 
 --Main Loop
@@ -81,23 +93,27 @@ while true do
     
     --Check Packet header
     if p.head == "FLOW" then
-        local lid = getLocalID(p.id)
-        log("Open", "Converted ID to local ID: " .. p.id .. " -> " .. lid)
+        local lid = getLocalID(p.aspect)
+        log("Flow", "Converted ID to local ID: " .. p.id .. " -> " .. lid)
 
         if lid ~= 0 then
-            activeID = 2 ^ (lid - 1)
-            update()
-            sleep(0.1)
-
-            activeID = 0
-            update()
-            sleep(5) --TODO: Tweak Cooldowns
-
+            sendPulse(lid)
+            sleep(3)
             responseOK(s, p.head)
         else
             responseFAIL(s, p.head)
         end
 
         log("Open", "Applied change to output var: " .. activeID)
+    elseif p.head == "PROBE" then
+        local lid = getLocalID(p.aspect)
+        log("Probe", "Converted ID to local ID: " .. p.id .. " -> " .. lid)
+
+        if lid ~= 0 then
+            if nbtPeripherals[lid].has_nbt() then
+                local nbt = nbtPeripherals.read_nbt()
+                local nbtAspect, nbtAmount = nbt.Aspect, nbt.Amount
+            end
+        end
     end
 end
