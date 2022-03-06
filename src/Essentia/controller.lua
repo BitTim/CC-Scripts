@@ -1,3 +1,7 @@
+--- Script for controlling Essentia Valves and reading stored amount of essentia in jars
+--- @class Essentia.Controller
+local M = {}
+
 --Create Secure Modem
 local ecnet = require("api/ecnet")
 local modem = peripheral.wrap("top")
@@ -23,9 +27,9 @@ print(title.." "..version)
 term.setTextColor(colors.lightGray)
 
 --- Logging with title and time
--- @param head Title of log message
--- @param str Log message
-local log = function(head, str)
+--- @param head Title of log message
+--- @param str Log message
+function M.log(head, str)
     local logStr = "<" .. os.time() .. "> [" .. head .. "]: " .. str
     print(logStr)
 end
@@ -39,9 +43,9 @@ for i = 1, #nbtPeripheralTags do
 end
 
 --- Convert aspect name to local ID
--- @param aspect Aspect name to convert
--- @return Local ID of the aspct or 0 when aspect is not served
-local function getLocalID(aspect)
+--- @param aspect Aspect name to convert
+--- @return Local ID of the aspct or 0 when aspect is not served
+function M.getLocalID(aspect)
     local localID = 0
 
     for i = 1, #servedAspects do
@@ -52,11 +56,11 @@ local function getLocalID(aspect)
 end
 
 --- Send a response to a request
--- @parameter s Adress of requesting client
--- @parameter head Header of the response packet
--- @parameter status Status of the response packet
--- @parameter contents Table with packet contents
-local sendResponse = function(s, head, status, contents)
+--- @param s Adress of requesting client
+--- @param head Header of the response packet
+--- @param status Status of the response packet
+--- @param contents Table with packet contents
+function M.sendResponse(s, head, status, contents)
     -- Create response packet
 	local p = {head = head, status = status, contents = contents}
     local reply = textutils.serialize(p)
@@ -69,8 +73,8 @@ local sendResponse = function(s, head, status, contents)
 end
 
 --- Sends a redstone pulse to a bundled cable on the output side on the specified channel
--- @parameter id Local ID which corresponds to the color channel of the bundled cable
-local function sendPulse(id)
+--- @param id Local ID which corresponds to the color channel of the bundled cable
+function M.sendPulse(id)
     local rid = 2 ^ (id - 1)
     redstone.setBundledOutput(outputSide, rid)
     sleep(0.1)
@@ -114,3 +118,5 @@ while true do
         end
     end
 end
+
+return M

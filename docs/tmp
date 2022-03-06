@@ -1,0 +1,60 @@
+.. lua:class:: Essentia.Controller
+    :module:
+
+
+
+
+
+
+
+    .. lua:staticmethod:: log(head, str)
+
+
+        Logging with title and time
+
+
+
+        :param head: of log message
+        :type head: Title
+        :param str: message
+        :type str: Log
+
+    .. lua:staticmethod:: getLocalID(aspect)
+
+
+        Convert aspect name to local ID
+
+
+
+        :param aspect: name to convert
+        :type aspect: Aspect
+        :return: ID of the aspct or 0 when aspect is not served
+        :rtype: Local
+
+    .. lua:staticmethod:: sendResponse(s, head, status, contents)
+
+
+        Send a response to a request
+
+
+
+        :param s: of requesting client
+        :type s: Adress
+        :param head: of the response packet
+        :type head: Header
+        :param status: of the response packet
+        :type status: Status
+        :param contents: with packet contents
+        :type contents: Table
+
+    .. lua:staticmethod:: sendPulse(id)
+
+
+        Sends a redstone pulse to a bundled cable on the output side on the specified channel
+
+
+
+        :param id: ID which corresponds to the color channel of the bundled cable
+        :type id: Local
+
+
