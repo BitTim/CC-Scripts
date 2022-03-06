@@ -22,7 +22,9 @@ term.setCursorPos(1, 1)
 print(title.." "..version)
 term.setTextColor(colors.lightGray)
 
---Function for Logging
+--- Logging with title and time
+-- @param head Title of log message
+-- @param str Log message
 local log = function(head, str)
     local logStr = "<" .. os.time() .. "> [" .. head .. "]: " .. str
     print(logStr)
@@ -36,7 +38,9 @@ for i = 1, #nbtPeripheralTags do
     nbtPeripherals[i] = peripheral.wrap(nbtPeripheralTags[i])
 end
 
---Utility functions
+--- Convert aspect name to local ID
+-- @param aspect Aspect name to convert
+-- @return Local ID of the aspct or 0 when aspect is not served
 local function getLocalID(aspect)
     local localID = 0
 
@@ -47,32 +51,25 @@ local function getLocalID(aspect)
     return localID
 end
 
-local responseOK = function(s, head)
-    --Create reply packet
-    local p = {head = head, status = "OK"}
+--- Send a response to a request
+-- @parameter s Adress of requesting client
+-- @parameter head Header of the response packet
+-- @parameter status Status of the response packet
+-- @parameter contents Table with packet contents
+local sendResponse = function(s, head, status, contents)
+    -- Create response packet
+	local p = {head = head, status = status, contents = contents}
     local reply = textutils.serialize(p)
         
-    --Send reply packet
+    -- Send reply packet
     sModem.connect(s, 3)
     sModem.send(s, reply)
 
     log("Response", "\"OK\" sent to: " .. s)
 end
 
-local responseFAIL = function(s, head)
-    --Create reply packet
-    local p = {head = head, status = "FAIL"}
-    local reply = textutils.serialize(p)
-        
-    --Send reply packet
-    sModem.connect(s, 3)
-    sModem.send(s, reply)
-
-    log("Response", "\"FAIL\" sent to: " .. s)
-end
-
-
---Update function
+--- Sends a redstone pulse to a bundled cable on the output side on the specified channel
+-- @parameter id Local ID which corresponds to the color channel of the bundled cable
 local function sendPulse(id)
     local rid = 2 ^ (id - 1)
     redstone.setBundledOutput(outputSide, rid)
