@@ -72,6 +72,9 @@ A list containing the names of all aspects this controller serves. The order of 
 * **Type:** ``table``
 * **Default:** ``{}``
 
+.. warning::
+   Please make sure, that the order of the aspects matches the order of the color channels used in the bundled cable. To see the order of the colors, consult the table at the bottom of `this page <https://computercraft.info/wiki/Colors_(API)>`\ .
+
 ----
 
 .. _essentia_docs_controller_propconf_nbtPeripheralTags:
