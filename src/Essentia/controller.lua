@@ -3,9 +3,7 @@
 local M = {}
 
 --Create Secure Modem
-local ecnet = require("api/ecnet")
-local modem = peripheral.wrap("top")
-local sModem = ecnet.wrap(modem)
+
 
 --Create Variables
 local title = "Essentia Controller"
