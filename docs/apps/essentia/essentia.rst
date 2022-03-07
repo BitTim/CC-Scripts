@@ -55,15 +55,15 @@ Setup
 Prequisites
 ^^^^^^^^^^^
 
-* Each jar in your storage room has to be labled.
+* Each jar in your storage room has to be labeled.
 * Each jar in your storage room needs to be part of a flow control structure.
 * For every **15 jars**, you need a **controller**
-* For the **controller**, you need a computer with a **wireless mdoem**.
+* For each **controller**, you need a computer with a **wireless modem**.
 * For the **server**, you need a computer with an **ender modem**.
 * For the **display**, you will need a computer with a **wireless modem** and a **5 x 2** monitor.
 
 .. important:: 
-    The ender modem is required for the server to lift the distance limit for transmissions
+    It is required to use an ender modem for the server to bypass the distance limit for transmissions
 
 .. note::
     It is recommended to attach a disk drive and a monitor of any size to the server

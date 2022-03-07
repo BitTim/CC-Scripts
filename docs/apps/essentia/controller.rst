@@ -63,7 +63,7 @@ Properties - Configurable
 servedAspects
 ^^^^^^^^^^^^^
 
-A list containing the names of all aspects this controller servers. The order of aspects determines the local ID for each aspect.
+A list containing the names of all aspects this controller serves. The order of aspects determines the local ID for each aspect.
 
 .. code-block:: lua
     
@@ -79,7 +79,7 @@ A list containing the names of all aspects this controller servers. The order of
 nbtPeripheralTags
 ^^^^^^^^^^^^^^^^^
 
-A list containing the peripheral names for the NBT observers. The order of tags corresponds to the local ID, make sure the orders match.
+A list containing the peripheral names (e.g. ``nbt_observer_0``) for the NBT observers. The order of tags corresponds to the local ID.
 
 .. code-block:: lua
     
@@ -87,6 +87,9 @@ A list containing the peripheral names for the NBT observers. The order of tags 
 
 * **Type:** ``table``
 * **Default:** ``{}``
+
+.. warning::
+   Please make sure, that the order of the peripheral names and the order of aspects in :ref:`servedAspects <essentia_docs_controller_propconf_servedAspects>` match.
 
 ----
 
