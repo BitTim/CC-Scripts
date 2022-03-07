@@ -27,8 +27,8 @@ print(title.." "..version)
 term.setTextColor(colors.lightGray)
 
 --- Logging with title and time
---- @param head Title of log message
---- @param str Log message
+--- @param head string Title of log message
+--- @param str string Log message
 function M.log(head, str)
     local logStr = "<" .. os.time() .. "> [" .. head .. "]: " .. str
     print(logStr)
@@ -43,8 +43,8 @@ for i = 1, #nbtPeripheralTags do
 end
 
 --- Convert aspect name to local ID
---- @param aspect Aspect name to convert
---- @return Local ID of the aspct or 0 when aspect is not served
+--- @param aspect string Aspect name to convert
+--- @return int Local ID of the aspct or 0 when aspect is not served
 function M.getLocalID(aspect)
     local localID = 0
 
@@ -56,10 +56,10 @@ function M.getLocalID(aspect)
 end
 
 --- Send a response to a request
---- @param s Adress of requesting client
---- @param head Header of the response packet
---- @param status Status of the response packet
---- @param contents Table with packet contents
+--- @param s string Adress of requesting client
+--- @param head string Header of the response packet
+--- @param status string Status of the response packet
+--- @param contents table Table with packet contents
 function M.sendResponse(s, head, status, contents)
     -- Create response packet
 	local p = {head = head, status = status, contents = contents}
@@ -73,7 +73,7 @@ function M.sendResponse(s, head, status, contents)
 end
 
 --- Sends a redstone pulse to a bundled cable on the output side on the specified channel
---- @param id Local ID which corresponds to the color channel of the bundled cable
+--- @param id int Local ID which corresponds to the color channel of the bundled cable
 function M.sendPulse(id)
     local rid = 2 ^ (id - 1)
     redstone.setBundledOutput(outputSide, rid)
