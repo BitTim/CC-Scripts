@@ -1,7 +1,7 @@
 -- Script for controlling Essentia Valves and reading stored amount of essentia in jars
 
---Create Secure Modem
-
+-- Import libraries
+local comlib = require("/lib/comlib")
 
 --Create Variables
 local title = "Essentia Controller"
@@ -11,9 +11,14 @@ local version = "v1.0"
 local servedAspects = {}
 local nbtPeripheralTags = {}
 local outputSide = "back"
+local modemSide = "top"
 
 -- Internal Properties
 local nbtPeripherals = {}
+local sModem = nil
+
+--Create Secure Modem
+sModem = comlib.open(modemSide)
 
 --Set title of shell
 term.setTextColor(colors.yellow)
@@ -29,7 +34,7 @@ local function log(head, str)
 end
 
 --Print Address
-log("Address", ecnet.address)
+log("Address", comlib.getAddress())
 
 --Wrap all NBT Peripherals
 for i = 1, #nbtPeripheralTags do
@@ -45,19 +50,6 @@ local function getLocalID(aspect)
     end
 
     return localID
-end
-
--- Send a response to a request
-local function sendResponse(s, head, status, contents)
-    -- Create response packet
-	local p = {head = head, status = status, contents = contents}
-    local reply = textutils.serialize(p)
-
-    -- Send reply packet
-    sModem.connect(s, 3)
-    sModem.send(s, reply)
-
-    log("Response", "\"OK\" sent to: " .. s)
 end
 
 -- Sends a redstone pulse to a bundled cable on the output side on the specified channel
@@ -87,12 +79,13 @@ while true do
         if lid ~= 0 then
             sendPulse(lid)
             sleep(3)
-            sendResponse(s, p.head, "OK", nil)
+            comlib.sendResponse(s, p.head, "OK", nil)
         else
-            sendResponse(s, p.head, "FAIL", nil)
+            comlib.sendResponse(s, p.head, "FAIL", nil)
         end
 
         log("Flow", "Applied change to output var: " .. activeID)
+
     elseif p.head == "PROBE" then
         local lid = getLocalID(p.aspect)
         log("Probe", "Converted ID to local ID: " .. p.id .. " -> " .. lid)
@@ -102,14 +95,12 @@ while true do
                 local nbt = nbtPeripherals.read_nbt()
                 local nbtAspect, nbtAmount = nbt.Aspect, nbt.Amount
 		
-				sendResponse(s, p.head, "OK", {aspect = nbtAspect, amount = nbtAmount})
+				comlib.sendResponse(s, p.head, "OK", {aspect = nbtAspect, amount = nbtAmount})
             else
-				sendResponse(s, p.head, "FAIL", nil)
+				comlib.sendResponse(s, p.head, "FAIL", nil)
 			end
         else
-			sendResponse(s, p.head, "FAIL", nil)
+			comlib.sendResponse(s, p.head, "FAIL", nil)
 		end
     end
 end
-
-return M

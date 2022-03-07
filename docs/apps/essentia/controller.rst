@@ -5,6 +5,28 @@ Controller
 
 The program, that manages controlling the essentia valves and reading amount of aspects stored in jars
 
+**Contents:**
+
+* :ref:`Dependencies <essentia_docs_controller_deps>`
+* :ref:`Properties - Configurable <essentia_docs_controller_propconf>`
+* :ref:`Properties - Internal <essentia_docs_controller_propint>`
+* :ref:`Packet Headers <essentia_docs_controller_packhead>`
+* :ref:`Functions <essentia_docs_controller_funcs>`
+
+
+
+
+
+
+
+
+.. _essentia_docs_controller_deps:
+
+Dependencies
+------------
+
+* :ref:`ComLib <comlib>`
+
 
 
 
@@ -32,6 +54,9 @@ Properties - Configurable
     * - :ref:`outputSide <essentia_docs_controller_propconf_outputSide>`
       - ``string``
       - ``"back"``
+    * - :ref:`modemSide <essentia_docs_controller_propconf_modemSide>`
+      - ``string``
+      - ``"top"``
 
 .. _essentia_docs_controller_propconf_servedAspects:
 
@@ -81,6 +106,22 @@ The side the bundled cable is connected to the computer.
 
 ----
 
+.. _essentia_docs_controller_propconf_modemSide:
+
+modemSide
+^^^^^^^^^^
+
+The side the wireless modem is connected to the computer.
+
+.. code-block:: lua
+    
+    local outputSide = "top"
+
+* **Type:** ``string``
+* **Default:** ``"top"``
+
+----
+
 
 
 
@@ -102,6 +143,9 @@ Properties - Internal
     * - :ref:`nbtPeripherals <essentia_docs_controller_propint_nbtPeripherals>`
       - ``table``
       - ``{}``
+    * - :ref:`sModem <essentia_docs_controller_propint_sModem>`
+      - ``sModem``
+      - ``nil``
 
 .. _essentia_docs_controller_propint_nbtPeripherals:
 
@@ -119,6 +163,22 @@ A list containing the wrapped nbt observer peripherals.
 
 ----
 
+.. _essentia_docs_controller_propint_sModem:
+
+sModem
+^^^^^^
+
+An instance of a secure modem object
+
+.. code-block:: lua
+    
+    local nbtPeripherals = {}
+
+* **Type:** ``sModem``
+* **Default:** ``nil``
+
+----
+
 
 
 
@@ -133,8 +193,6 @@ Packet Headers
 
 * :ref:`FLOW <essentia_docs_controller_packhead_FLOW>`
 * :ref:`PROBE <essentia_docs_controller_packhead_PROBE>`
-
-
 
 .. _essentia_docs_controller_packhead_FLOW:
 
@@ -224,8 +282,6 @@ Functions
 * :ref:`getLocalID(aspect) <essentia_docs_controller_funcs_getLocalID>`
 * :ref:`sendPulse(id) <essentia_docs_controller_funcs_sendPulse>`
 
-
-
 .. _essentia_docs_controller_funcs_getLocalID:
 
 getLocalID(aspect)
@@ -266,6 +322,18 @@ Converts aspect name to local ID using :ref:`servedAspects <essentia_docs_contro
     * - ``number``
       - Local ID of **aspect** or 0 if **aspect** is not served.
 
+**Example:**
+
+.. code-block:: lua
+
+  local servedAspects = {"terra", "aqua", "aer", "ignis", "ordo"}
+  local localID = getLocalID("aer")
+
+In this case, ``localID`` would equal to ``3``, since ``aer`` is the third element in the table
+
+.. note:: 
+  The table ``servedAspects`` would normally be set as a :ref:`configurable property <essentia_docs_controller_propconf_servedaspects>`
+
 ----
 
 .. _essentia_docs_controller_funcs_sendPulse:
@@ -298,3 +366,12 @@ Sends a redstone pulse on the specified channel through the bundled wire at :ref
 
 
 **Returns:** ``nil``
+
+**Example:**
+
+.. code-block:: lua
+
+  sendPulse(4)
+
+This would send a redstone pulse on the :ref:`outputSide <essentia_docs_controller_propconf_outputside>` on the color channel corresponding to the number ``2 ^ (id - 1)``,
+in this case ``8``, which corresponds to the color ``lightBlue`` as seen `here <https://computercraft.info/wiki/Colors_(API)>`_\ . Thus this command would send a pulse on the lightBlue channel.
