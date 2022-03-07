@@ -100,12 +100,12 @@ while true do
         if lid ~= 0 then
             sendPulse(lid)
             sleep(3)
-            responseOK(s, p.head)
+            sendResponse(s, p.head, "OK", nil)
         else
-            responseFAIL(s, p.head)
+            sendResponse(s, p.head, "FAIL", nil)
         end
 
-        log("Open", "Applied change to output var: " .. activeID)
+        log("Flow", "Applied change to output var: " .. activeID)
     elseif p.head == "PROBE" then
         local lid = getLocalID(p.aspect)
         log("Probe", "Converted ID to local ID: " .. p.id .. " -> " .. lid)
@@ -114,8 +114,14 @@ while true do
             if nbtPeripherals[lid].has_nbt() then
                 local nbt = nbtPeripherals.read_nbt()
                 local nbtAspect, nbtAmount = nbt.Aspect, nbt.Amount
-            end
-        end
+		
+				sendResponse(s, p.head, "OK", {aspect = nbtAspect, amount = nbtAmount})
+            else
+				sendResponse(s, p.head, "FAIL", nil)
+			end
+        else
+			sendResponse(s, p.head, "FAIL", nil)	
+		end
     end
 end
 
