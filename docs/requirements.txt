@@ -1,2 +1,0 @@
-markupsafe==2.0.0
-sphinx-lua

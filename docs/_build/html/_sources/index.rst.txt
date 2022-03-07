@@ -7,22 +7,28 @@ Welcome to CC-Scripts's documentation!
 ======================================
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+   :caption: Apps
+   :hidden:
 
-   bank
-   button
-   dns
-   essentia
-   keycard
-   letter_studio
-   server_client_framework
-   turtle
+   apps/bank
+   apps/button
+   apps/dns/dns
+   apps/essentia/essentia
+   apps/keycard
+   apps/letter_studio
+   apps/server_client_framework
+   apps/turtle
 
+.. toctree::
+   :caption: Libraries
+   :hidden:
 
-Indices and tables
-==================
+   lib/comlib
+   lib/loglib
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+.. toctree::
+   :caption: Third Party
+   :hidden:
+
+   lib/ThirdParty/ecnet
+   lib/ThirdParty/sha

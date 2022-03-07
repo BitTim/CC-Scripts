@@ -1,6 +1,4 @@
---- Script for controlling Essentia Valves and reading stored amount of essentia in jars
---- @class Essentia.Controller
-local M = {}
+-- Script for controlling Essentia Valves and reading stored amount of essentia in jars
 
 --Create Secure Modem
 
@@ -8,14 +6,14 @@ local M = {}
 --Create Variables
 local title = "Essentia Controller"
 local version = "v1.0"
-local outputSide = "back"
 
+-- Configurable Properties
 local servedAspects = {}
 local nbtPeripheralTags = {}
-local nbtPeripherals = {}
+local outputSide = "back"
 
---Internal variables
-local activeID = 0
+-- Internal Properties
+local nbtPeripherals = {}
 
 --Set title of shell
 term.setTextColor(colors.yellow)
@@ -24,10 +22,8 @@ term.setCursorPos(1, 1)
 print(title.." "..version)
 term.setTextColor(colors.lightGray)
 
---- Logging with title and time
---- @param head string Title of log message
---- @param str string Log message
-function M.log(head, str)
+-- Logging with title and time
+local function log(head, str)
     local logStr = "<" .. os.time() .. "> [" .. head .. "]: " .. str
     print(logStr)
 end
@@ -40,10 +36,8 @@ for i = 1, #nbtPeripheralTags do
     nbtPeripherals[i] = peripheral.wrap(nbtPeripheralTags[i])
 end
 
---- Convert aspect name to local ID
---- @param aspect string Aspect name to convert
---- @return int Local ID of the aspct or 0 when aspect is not served
-function M.getLocalID(aspect)
+-- Convert aspect name to local ID
+local function getLocalID(aspect)
     local localID = 0
 
     for i = 1, #servedAspects do
@@ -53,16 +47,12 @@ function M.getLocalID(aspect)
     return localID
 end
 
---- Send a response to a request
---- @param s string Adress of requesting client
---- @param head string Header of the response packet
---- @param status string Status of the response packet
---- @param contents table Table with packet contents
-function M.sendResponse(s, head, status, contents)
+-- Send a response to a request
+local function sendResponse(s, head, status, contents)
     -- Create response packet
 	local p = {head = head, status = status, contents = contents}
     local reply = textutils.serialize(p)
-        
+
     -- Send reply packet
     sModem.connect(s, 3)
     sModem.send(s, reply)
@@ -70,9 +60,8 @@ function M.sendResponse(s, head, status, contents)
     log("Response", "\"OK\" sent to: " .. s)
 end
 
---- Sends a redstone pulse to a bundled cable on the output side on the specified channel
---- @param id int Local ID which corresponds to the color channel of the bundled cable
-function M.sendPulse(id)
+-- Sends a redstone pulse to a bundled cable on the output side on the specified channel
+local function sendPulse(id)
     local rid = 2 ^ (id - 1)
     redstone.setBundledOutput(outputSide, rid)
     sleep(0.1)
@@ -118,7 +107,7 @@ while true do
 				sendResponse(s, p.head, "FAIL", nil)
 			end
         else
-			sendResponse(s, p.head, "FAIL", nil)	
+			sendResponse(s, p.head, "FAIL", nil)
 		end
     end
 end
