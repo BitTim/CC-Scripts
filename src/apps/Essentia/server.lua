@@ -1,52 +1,77 @@
---Create Secure Modem
-local ecnet = require("api/ecnet")
-local modem = peripheral.find("modem")
-local sModem = ecnet.wrap(modem)
+-- ================================
+--  server.lua
+-- --------------------------------
+--  Script for managing and
+--  distributing requests to
+--  controllers
+-- --------------------------------
+--  (C) Copyright 2022,
+--  Tim Anhalt (BitTim)
+-- ================================
 
-local dns = "02ed:16d0:a091:c3c5:84d6"
+-- --------------------------------
+--  Dependencies
+-- --------------------------------
 
---Create Variables
+local comlib = require("/lib/comlib")
+local loglib = require("/lib/loglib")
+
+-- --------------------------------
+--  Configurable Properties
+-- --------------------------------
+
+local controllerDomains = {}
+local modemSide = "top"
+
+-- --------------------------------
+--  Constants
+-- --------------------------------
+
 local title = "Essentia Server"
 local version = "v1.0"
-local controllerDomains = {}
 
---Set title of shell
-term.setTextColor(colors.yellow)
-term.clear()
-term.setCursorPos(1, 1)
-print(title.." "..version)
+-- --------------------------------
+--  Internal Properties
+-- --------------------------------
 
---Route Output to Monitor
-local mon = peripheral.find("monitor")
-mon.setTextScale(0.5)
-term.redirect(mon)
+local sModem = nil
 
---Set title of monitor
-term.setTextColor(colors.yellow)
-term.clear()
-term.setCursorPos(1, 1)
-print(title.." "..version)
-term.setTextColor(colors.lightGray)
 
---Function for Logging
-local log = function(head, str)
-    local logStr = "<" .. os.time() .. "> [" .. head .. "]: " .. str
-    print(logStr)
-end
 
---Print Address
-log("Address", ecnet.address)
 
---Connect to DNS
-log("INIT", "Connecting to DNS...")
-local connected = sModem.connect(dns, 3)
 
---Show status message
-if not connected then
-    log("INIT", "Failed to connect to DNS")
-else
-    log("INIT", "Connected!")
-end
+
+
+
+-- --------------------------------
+--  Main Program
+-- --------------------------------
+
+sModem = comlib.open(modemSide) -- Create Secure Modem
+loglib.init(title, version) -- Initialize LogLib
+loglib.log("Address", comlib.getAddress()) -- Print Address
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 --Utility functions
 local sendPacketForReply = function(address, msg, head, timeout)

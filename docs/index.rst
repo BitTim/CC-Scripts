@@ -24,6 +24,7 @@ Welcome to CC-Scripts's documentation!
    :hidden:
 
    lib/comlib
+   lib/dnslib
    lib/loglib
 
 .. toctree::

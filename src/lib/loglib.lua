@@ -1,5 +1,5 @@
 -- ================================
---  Controller.lua
+--  loglib.lua
 -- --------------------------------
 --  Library for logging to a
 --  monitor / to the screen

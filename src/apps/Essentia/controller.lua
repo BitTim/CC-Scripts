@@ -1,5 +1,5 @@
 -- ================================
---  Controller.lua
+--  controller.lua
 -- --------------------------------
 --  Script for controlling Essentia
 --  Valves and reading stored amount

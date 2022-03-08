@@ -1,5 +1,5 @@
 -- ================================
---  Controller.lua
+--  comlib.lua
 -- --------------------------------
 --  Library for communication
 --  between two computers
