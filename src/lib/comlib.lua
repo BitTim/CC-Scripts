@@ -1,7 +1,31 @@
--- Library for communication between two computers
-local M = {}
+-- ================================
+--  Controller.lua
+-- --------------------------------
+--  Library for communication
+--  between two computers
+-- --------------------------------
+--  (C) Copyright 2022,
+--  Tim Anhalt (BitTim)
+-- ================================
+
+-- --------------------------------
+--  Dependencies
+-- --------------------------------
 
 local ecnet = require(".\\ThirdParty\\ecnet.lua")
+
+
+
+
+
+
+
+
+-- --------------------------------
+--  Functions
+-- --------------------------------
+
+local M = {}
 
 -- Open secure modem
 function M.open(side)

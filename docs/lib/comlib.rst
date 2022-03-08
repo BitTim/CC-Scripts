@@ -22,7 +22,7 @@ A library for communicating between two computers in a server and client relatio
 Dependencies
 ------------
 
-* :ref:`ecnet <ecnet>`
+* :ref:`ecnet (Third Party) <ecnet>`
 
 
 
@@ -49,7 +49,7 @@ Opens secure connection on modem on specified side
 
 .. code-block:: lua
 
-    local funtion open(side)
+    function comlib.open(side)
         ...
         return sModem
     end
@@ -100,7 +100,7 @@ Returns address of current computer
 
 .. code-block:: lua
 
-    local funtion getAddress()
+    function comlib.getAddress()
         ...
         return address
     end
@@ -138,7 +138,7 @@ Sends a response to the specified receiver with specified head, status and addit
 
 .. code-block:: lua
 
-    local funtion sendResponse(rec, head, status, contents)
+    function comlib.sendResponse(rec, head, status, contents)
         ...
     end
 

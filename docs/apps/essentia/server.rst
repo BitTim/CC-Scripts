@@ -1,4 +1,4 @@
-.. _essentia_docs_server:
+.. _essentia_defs_server:
 
 Server
 ======

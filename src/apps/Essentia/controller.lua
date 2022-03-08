@@ -1,44 +1,60 @@
--- Script for controlling Essentia Valves and reading stored amount of essentia in jars
+-- ================================
+--  Controller.lua
+-- --------------------------------
+--  Script for controlling Essentia
+--  Valves and reading stored amount
+--  of essentia in jars
+-- --------------------------------
+--  (C) Copyright 2022,
+--  Tim Anhalt (BitTim)
+-- ================================
 
--- Import libraries
+-- --------------------------------
+--  Dependencies
+-- --------------------------------
+
 local comlib = require("/lib/comlib")
+local loglib = require("/lib/loglib")
 
---Create Variables
-local title = "Essentia Controller"
-local version = "v1.0"
+-- --------------------------------
+--  Configurable Properties
+-- --------------------------------
 
--- Configurable Properties
 local servedAspects = {}
 local nbtPeripheralTags = {}
 local outputSide = "back"
 local modemSide = "top"
 
--- Internal Properties
+-- --------------------------------
+--  Constants
+-- --------------------------------
+
+local title = "Essentia Controller"
+local version = "v1.0"
+
+-- --------------------------------
+--  Internal Properties
+-- --------------------------------
+
 local nbtPeripherals = {}
 local sModem = nil
 
---Create Secure Modem
-sModem = comlib.open(modemSide)
 
---Set title of shell
-term.setTextColor(colors.yellow)
-term.clear()
-term.setCursorPos(1, 1)
-print(title.." "..version)
-term.setTextColor(colors.lightGray)
 
--- Logging with title and time
-local function log(head, str)
-    local logStr = "<" .. os.time() .. "> [" .. head .. "]: " .. str
-    print(logStr)
-end
 
---Print Address
-log("Address", comlib.getAddress())
 
---Wrap all NBT Peripherals
-for i = 1, #nbtPeripheralTags do
-    nbtPeripherals[i] = peripheral.wrap(nbtPeripheralTags[i])
+
+
+
+-- --------------------------------
+--  Local Functions
+-- --------------------------------
+
+-- Wrap all NBT Peripherals
+local function wrapNBTPeripherals()
+    for i = 1, #nbtPeripheralTags do
+        nbtPeripherals[i] = peripheral.wrap(nbtPeripheralTags[i])
+    end
 end
 
 -- Convert aspect name to local ID
@@ -62,45 +78,81 @@ local function sendPulse(id)
     log("SendPulse", "Setting redstone output to: " .. id)
 end
 
---Main Loop
-while true do
-    --Receive Packet
-    log("Main", "Receiving packet...")
-    local s, msg = sModem.receive()
-    local p = textutils.unserialize(msg)
 
-    log("Main", "Received packet with head: " .. p.head)
-    
-    --Check Packet header
-    if p.head == "FLOW" then
-        local lid = getLocalID(p.aspect)
-        log("Flow", "Converted ID to local ID: " .. p.id .. " -> " .. lid)
 
-        if lid ~= 0 then
-            sendPulse(lid)
-            sleep(3)
-            comlib.sendResponse(s, p.head, "OK", nil)
-        else
-            comlib.sendResponse(s, p.head, "FAIL", nil)
-        end
 
-        log("Flow", "Applied change to output var: " .. activeID)
 
-    elseif p.head == "PROBE" then
-        local lid = getLocalID(p.aspect)
-        log("Probe", "Converted ID to local ID: " .. p.id .. " -> " .. lid)
 
-        if lid ~= 0 then
-            if nbtPeripherals[lid].has_nbt() then
-                local nbt = nbtPeripherals.read_nbt()
-                local nbtAspect, nbtAmount = nbt.Aspect, nbt.Amount
+
+
+-- --------------------------------
+--  Request Handlers
+-- --------------------------------
+
+-- Handler for FLOW request
+local function flow(s, p)
+    local lid = getLocalID(p.contents.aspect)
+    log("Flow", "Converted ID to local ID: " .. p.contents.aspect .. " -> " .. lid)
+
+    if lid ~= 0 then
+        sendPulse(lid)
+        sleep(3)
+        comlib.sendResponse(s, p.head, "OK", nil)
+    else
+        comlib.sendResponse(s, p.head, "FAIL", nil)
+    end
+
+    loglib.log("Flow", "Released 5 essentia of aspect: " .. p.contents.aspect .. " (Local ID: " .. lid .. ")")
+end
+
+-- Handler for PROBE request
+local function probe(s, p)
+    local lid = getLocalID(p.contents.aspect)
+    loglib.log("Probe", "Converted ID to local ID: " .. p.contents.aspect .. " -> " .. lid)
+
+    if lid ~= 0 then
+        if nbtPeripherals[lid].has_nbt() then
+            local nbt = nbtPeripherals.read_nbt()
+            local nbtAspect, nbtAmount = nbt.Aspect, nbt.Amount
 		
-				comlib.sendResponse(s, p.head, "OK", {aspect = nbtAspect, amount = nbtAmount})
-            else
-				comlib.sendResponse(s, p.head, "FAIL", nil)
-			end
+			comlib.sendResponse(s, p.head, "OK", {aspect = nbtAspect, amount = nbtAmount})
         else
 			comlib.sendResponse(s, p.head, "FAIL", nil)
 		end
+    else
+		comlib.sendResponse(s, p.head, "FAIL", nil)
+	end
+end
+
+
+
+
+
+
+
+
+-- --------------------------------
+--  Main Program
+-- --------------------------------
+
+sModem = comlib.open(modemSide) -- Create Secure Modem
+loglib.init(title, version) -- Initialize LogLib
+loglib.log("Address", comlib.getAddress()) -- Print Address
+
+-- Main Loop
+while true do
+    -- Receive and decoserialize packet
+    loglib.log("Main", "Receiving packet...")
+    local s, msg = sModem.receive()
+    local p = textutils.unserialize(msg)
+
+    loglib.log("Main", "Received packet with header: " .. p.head)
+
+    -- Check if packet header corresponds to a request
+    if p.head == "FLOW" then
+        flow(s, p)
+
+    elseif p.head == "PROBE" then
+        probe(s, p)
     end
 end

@@ -1,4 +1,4 @@
-.. _essentia_docs_display:
+.. _essentia_defs_display:
 
 Display
 =======

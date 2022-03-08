@@ -16,9 +16,9 @@ to a consuming machine, like the Thaumatorium.
 
 The app is broken down into 3 scripts, which run on different computers:
 
-* :ref:`Controller <essentia_docs_controller>`
-* :ref:`Server <essentia_docs_server>`
-* :ref:`Display <essentia_docs_display>`
+* :ref:`Controller <essentia_defs_controller>`
+* :ref:`Server <essentia_defs_server>`
+* :ref:`Display <essentia_defs_display>`
 
 .. warning::
     Essentia can only be moved in multiples of 5, due to a limitation in the redstone contraption for consistency reasons
@@ -95,11 +95,12 @@ ToDo: Insert installation instructions
 
 .. _essentia_docs:
 
-Documentation
--------------
+Definitions
+-----------
 
 .. toctree:: 
-    
+    :maxdepth: 1
+
     controller
     server
     display
