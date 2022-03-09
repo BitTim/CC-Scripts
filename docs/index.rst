@@ -6,6 +6,12 @@
 Welcome to CC-Scripts's documentation!
 ======================================
 
+.. toctree:: 
+   :caption: General
+   :hidden:
+
+   general/overview
+
 .. toctree::
    :caption: Apps
    :hidden:
