@@ -1,0 +1,10 @@
+-- ================================
+--  uilib.lua
+-- --------------------------------
+--  A library for various UI
+--  actions like drawing elements
+--  and checking for events.
+-- --------------------------------
+--  (C) Copyright 2022,
+--  Tim Anhalt (BitTim)
+-- ================================

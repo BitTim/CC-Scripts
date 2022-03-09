@@ -26,6 +26,7 @@ Welcome to CC-Scripts's documentation!
    lib/comlib
    lib/dnslib
    lib/loglib
+   lib/uilib
 
 .. toctree::
    :caption: Third Party
