@@ -38,7 +38,9 @@ Functions
 
 * :ref:`open(side) <comlib_funcs_open>`
 * :ref:`getAddress() <comlib_funcs_getAddress>`
-* :ref:`sendResponse(s, head, status, contents) <comlib_funcs_sendResponse>`
+* :ref:`sendRequest(address, request, header, timeout) <comlib_funcs_sendRequest>`
+* :ref:`sendResponse(address, header, status, contents) <comlib_funcs_sendResponse>`
+* :ref:`broadcast(addresses, request, header, timeout) <comlib_funcs_broadcast>`
 
 .. _comlib_funcs_open:
 
@@ -77,7 +79,7 @@ Opens secure connection on modem on specified side
 
     * - Type
       - Description
-    * - ``sModem``
+    * - ``table``
       - Instance of secure modem object.
 
 **Example:**
@@ -129,16 +131,96 @@ This would print the address of the current computer, e.g. ``b38a:a780:bd82:cd56
 
 ----
 
+.. _comlib_funcs_sendRequest:
+
+sendRequest(address, header, contents, timeout)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Creates a request packet with the status ``REQUEST``, sends it to the specified address
+and will wait for and return a response packet.
+This function will return ``-1`` if the receiving operation times out.
+
+.. code-block:: lua
+
+    function sendRequest(address, header, contents, timeout)
+        ...
+        return response
+    end
+
+**Arguments:**
+
+.. list-table::
+    :widths: 20 20 20 40
+    :header-rows: 1
+
+    * - Name
+      - Type
+      - Default
+      - Description
+    * - **address**
+      - ``string``
+      - ``nil``
+      - Address of the receiver.
+    * - **header**
+      - ``string``
+      - ``nil``
+      - Header of the request packet.
+    * - **contents**
+      - ``table``
+      - ``nil``
+      - Additional contents of the request packet.
+    * - **timeout**
+      - ``number``
+      - ``3``
+      - Number of seconds before the timeout would get triggered.
+
+.. note:: 
+    Additional contents depend on the type of request and what the receiver is expecting
+
+**Returns:**
+
+.. list-table::
+    :widths: 20 80
+    :header-rows: 1
+
+    * - Type
+      - Description
+    * - ``table``
+      - Received response packet.
+
+.. warning::
+    This function returns ``-1`` instead of the above, if one of these conditions is met:
+  
+    * Not being able to connect to the address.
+    * Sender of the response packet is ``nil``.
+    * Deserialized response packet is ``nil``.
+    * If response header does not match request header.
+
+**Example:**
+
+.. code-block:: lua
+
+    local comlib = require("comlib")
+    comlib.sendRequest("873b:a87c:fe93:846:c9d3", "GET", {key = "Hello"}, 3)
+
+In this example, a request packet with the **header** ``"GET"`` and the **contents** ``{key = "Hello"}`` will be sent to ``"873b:a87c:fe93:846:c9d3"``.
+For this example, we will assume that the receiver expects ``key`` in **contents**, which is why ``key = "Hello"`` is specified here.
+If no response is received within ``3`` seconds, the function would timeout and return ``-1``.
+
+Created packet: ``{head = "GET", status = "REQUEST", contents = {key = "Hello"}}``
+
+----
+
 .. _comlib_funcs_sendResponse:
 
-sendResponse(rec, head, status, contents)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sendResponse(address, header, status, contents)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Sends a response to the specified receiver with specified head, status and additional contents
 
 .. code-block:: lua
 
-    function comlib.sendResponse(rec, head, status, contents)
+    function comlib.sendResponse(address, header, status, contents)
         ...
     end
 
@@ -152,11 +234,11 @@ Sends a response to the specified receiver with specified head, status and addit
       - Type
       - Default
       - Description
-    * - **rec**
+    * - **address**
       - ``string``
       - ``nil``
       - Address of the receiver.
-    * - **head**
+    * - **header**
       - ``string``
       - ``nil``
       - Header of the response packet.
@@ -172,6 +254,8 @@ Sends a response to the specified receiver with specified head, status and addit
 .. note:: 
     Additional contents depend on the type of response and what the receiver is expecting
 
+**Returns:** ``nil``
+
 **Example:**
 
 .. code-block:: lua
@@ -179,6 +263,83 @@ Sends a response to the specified receiver with specified head, status and addit
     local comlib = require("comlib")
     comlib.sendResponse("b38a:a780:bd82:cd56:195f", "GET", "OK", {value = "Test"})
 
-In this example, a response packet for the header ``"GET"`` and the status ``"OK"`` will be sent to ``"b38a:a780:bd82:cd56:195f"``. For this example, we will assume that the receiver expects a value in **contents**, which is why ``value = "Test"`` is specified here.
+In this example, a response packet with the header ``"GET"`` and the status ``"OK"`` will be sent to ``"b38a:a780:bd82:cd56:195f"``.
+For this example, we will assume that the receiver expects ``value`` in **contents**, which is why ``value = "Test"`` is specified here.
 
-**Returns:** ``nil``
+Created packet: ``{head = "GET", status = "OK", contents = {value = "Test"}}``
+
+----
+
+.. _comlib_funcs_broadcast:
+
+broadcast(addresses, header, contents, timeout)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Broadcasts a request to multiple receivers and collects all responses. If a response of a receiver fails (:ref:`sendRequest <comlib_funcs_sendRequest>` returns ``-1``), its response will fall back to this one: ``{head = header, status = "FAIL", contents = {}}``.
+
+.. note:: 
+  This function calls :ref:`sendRequest() <comlib_funcs_sendRequest>` for each receiver.
+
+.. code-block:: lua
+
+    function comlib.broadcast(addresses, header, contents, timeout)
+      ...
+      return responses
+    end
+
+**Arguments:**
+
+.. list-table::
+    :widths: 20 20 20 40
+    :header-rows: 1
+
+    * - Name
+      - Type
+      - Default
+      - Description
+    * - **addresses**
+      - ``table``
+      - ``nil``
+      - Addresses of the receivers.
+    * - **header**
+      - ``string``
+      - ``nil``
+      - Header of the response packet.
+    * - **contents**
+      - ``table``
+      - ``nil``
+      - Additional contents to add to the packet.
+    * - **timeout**
+      - ``number``
+      - ``3``
+      - Number of seconds before the timeout would get triggered.
+
+.. note:: 
+    Additional contents depend on the type of response and what the receiver is expecting
+
+**Returns:**
+
+.. list-table::
+    :widths: 20 80
+    :header-rows: 1
+
+    * - Type
+      - Description
+    * - ``table``
+      - Received response packets.
+
+**Example:**
+
+.. code-block:: lua
+
+    local comlib = require("comlib")
+    local responses = {}
+    local receivers = {
+      "01ae:4a1e:0195:6e6e:56af",
+      "e990:4b07:961f:0b4b:c50a:",
+      "7a57:2c08:9d08:7bac:91ff"
+    }
+
+    responses = comlib.broadcast(receivers, "TEST", {})
+
+This would send the packet ``{head = "TEST", status = "REQUEST", contents = {}}`` to all three specified receivers and would store there responses in ``responses``.

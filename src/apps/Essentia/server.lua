@@ -14,6 +14,7 @@
 -- --------------------------------
 
 local comlib = require("/lib/comlib")
+local dnslib = require("/lib/dnslib")
 local loglib = require("/lib/loglib")
 
 -- --------------------------------
@@ -34,7 +35,55 @@ local version = "v1.0"
 --  Internal Properties
 -- --------------------------------
 
+local controllerAddresses = {}
 local sModem = nil
+
+
+
+
+
+
+
+
+-- --------------------------------
+--  Request Handlers
+-- --------------------------------
+
+local function flow(s, p)
+    loglib.log("Flow", "Broadcasting request")
+    local responses = comlib.broadcast(controllerAddresses, p.head, p.contents)
+    local handled = false
+
+    loglib.log("Flow", "Iterating over responses")
+    for i = 1, #responses do
+        if responses[i].status == "OK" then
+            loglib.log("Flow", "Sending response with status OK")
+            comlib.sendResponse(s, p.head, "OK", nil)
+            handled = true
+        end
+    end
+
+    loglib.log("Flow", "Sending response with status FAIL")
+    if handled == false then comlib.sendResponse(s, p.head, "FAIL", nil) end
+end
+
+local function probe(s, p)
+    loglib.log("Probe", "Broadcasting request")
+    local responses = comlib.broadcast(controllerAddresses, p.head, p.contents)
+    local handled = false
+
+    loglib.log("Probe", "Iterating over responses")
+    for i = 1, #responses do
+        if responses[i].status == "OK" then
+            loglib.log("Probe", "Sending response with status OK")
+            comlib.sendResponse(s, p.head, "OK", responses[i].contents)
+            handled = true
+        end
+    end
+
+    loglib.log("Probe", "Sending response with status FAIL")
+    if handled == false then comlib.sendResponse(s, p.head, "FAIL", nil) end
+end
 
 
 
@@ -47,152 +96,27 @@ local sModem = nil
 --  Main Program
 -- --------------------------------
 
-sModem = comlib.open(modemSide) -- Create Secure Modem
-loglib.init(title, version) -- Initialize LogLib
-loglib.log("Address", comlib.getAddress()) -- Print Address
+sModem = comlib.open(modemSide)                                 -- Create Secure Modem
+loglib.init(title, version)                                     -- Initialize LogLib
+loglib.log("Address", comlib.getAddress())                      -- Print Address
+dnslib.init()                                                   -- Initialize DNSLib
+controllerAddresses = dnslob.lookupMultiple(controllerDomains)  -- Look up all controller adresses
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
---Utility functions
-local sendPacketForReply = function(address, msg, head, timeout)
-    --Connect to Server
-    local ret = sModem.connect(address, 3)
-    if not ret then return -1 end
-
-    --Send packet and wait for reply
-    sModem.send(address, msg)
-    local s, p = sModem.receive(address, timeout)
-        
-    --Check for timeout
-    if s == nil then
-        return -1
-    end
-    
-    local reply = textutils.unserialize(p)
-
-    --Check if reply is valid
-    if reply == nil then
-        return -1
-    end
-
-    --Check for invalid packet
-    if reply.head ~= head then
-        return -1
-    end
-
-    return reply
+if controllerAddresses == -1 then
+    error("Could not look up addresses for the controllers")
 end
-
-local lookup = function(domain)
-    --Look up server
-    local p = {head = "LOOKUP", domain = domain}
-    local msg = textutils.serialize(p)
-
-    local reply = sendPacketForReply(dns, msg, "LOOKUP")
-    if reply == -1 then return false end
-
-    return reply.address
-end
-
-local responseOK = function(s, head)
-    --Create reply packet
-    local p = {head = head, status = "OK"}
-    local reply = textutils.serialize(p)
-        
-    --Send reply packet
-    sModem.connect(s, 3)
-    sModem.send(s, reply)
-
-    log("Response", "\"OK\" sent to: " .. s)
-end
-
-local responseFAIL = function(s, head)
-    --Create reply packet
-    local p = {head = head, status = "FAIL"}
-    local reply = textutils.serialize(p)
-        
-    --Send reply packet
-    sModem.connect(s, 3)
-    sModem.send(s, reply)
-
-    log("Response", "\"FAIL\" sent to: " .. s)
-end
-
-local function broadcast(receivers, msg, head, timeout)
-    local statuses = {}
-
-    for i = 1, #receivers do
-        log("Broadcast", "Sending to: " .. receivers[i])
-        local address = lookup(receivers[i])
-
-        local reply = sendPacketForReply(address, msg, head, timeout)
-        if reply == -1 then reply = {status = "FAIL"} end
-        statuses[#statuses + 1] = reply.status
-
-        if reply.status == "OK" then break end
-    end
-
-    return statuses
-end
-
-
 
 --Main Loop
 while true do
     --Receive Packet
-    log("Main", "Receiving packet...")
+    loglib.log("Main", "Receiving packet...")
     local s, msg = sModem.receive()
     local p = textutils.unserialize(msg)
 
-    log("Main", "Received packet with head: " .. p.head)
+    log("Main", "Received packet with header: " .. p.head)
     
-    local failed = false
     --Check Packet header
     if p.head == "FLOW" then
-        log("Flow", "Flowing id " .. p.id .. " x" .. p.amount)
-        local newP = {head = "FLOW", id = p.id}
-        local msg = textutils.serialize(newP)
-
-        for i = 1, p.amount do
-            local statuses = broadcast(controllerDomains, msg, "FLOW", 10)
-            
-            local ok = false
-            for st = 1, #statuses do
-                if statuses[st] == "OK" then
-                    ok = true
-                    break
-                end
-            end
-
-            if ok == false then
-                responseFAIL(s, p.head)
-                failed = true
-                break
-            end
-        end
-
-        if failed == false then
-            responseOK(s, p.head)
-        end
+        flow(s, p)
     end
 end

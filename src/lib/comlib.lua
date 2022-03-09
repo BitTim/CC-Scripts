@@ -39,15 +39,69 @@ function M.getAddress()
     return ecnet.address
 end
 
+-- Send a request and wait for response
+function M.sendRequest(address, header, contents, timeout)
+    -- Set defult values for not specified variables
+    if timeout == nil then timeout = 3 end
+
+    -- Connect to Server
+    local ret = sModem.connect(address, 3)
+    if not ret then return -1 end
+
+    -- Create request packet
+    local packet = {head = header, status = "REQUEST", contents = contents}
+    local request = textutils.serialize(packet)
+
+    -- Send packet and wait for response
+    sModem.send(address, request)
+    local sender, msg = sModem.receive(address, timeout)
+        
+    -- Check for timeout
+    if sender == nil then
+        return -1
+    end
+    
+    local response = textutils.unserialize(msg)
+
+    -- Check if reply is valid
+    if response == nil then
+        return -1
+    end
+
+    -- Check for invalid packet
+    if response.head ~= header then
+        return -1
+    end
+
+    return response
+end
+
 -- Send a response to a request
-function M.sendResponse(rec, head, status, contents)
+function M.sendResponse(address, header, status, contents)
     -- Create response packet
-	local p = {head = head, status = status, contents = contents}
+	local p = {head = header, status = status, contents = contents}
     local reply = textutils.serialize(p)
 
     -- Send reply packet
-    sModem.connect(rec, 3)
-    sModem.send(rec, reply)
+    sModem.connect(address, 3)
+    sModem.send(address, reply)
+end
+
+-- Broadcast a request to multiple receivers
+function M.broadcast(addresses, header, contents, timeout)
+    -- Set defult values for not specified variables
+    if timeout == nil then timeout = 3 end
+
+    local responses = {}
+
+    -- Iterate over all addresses
+    for i = 1, #addresses do
+        local response = M.sendRequest(addresses[i], header, contents, timeout)
+        if response == -1 then response = {head = header, status = "FAIL", contents = {}} end
+        responses[i] = response
+    end
+
+    return responses
 end
 
 return M

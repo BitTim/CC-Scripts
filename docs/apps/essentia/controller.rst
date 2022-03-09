@@ -123,7 +123,7 @@ The side the wireless modem is connected to the computer.
 
 .. code-block:: lua
     
-    local outputSide = "top"
+    local modemSide = "top"
 
 * **Type:** ``string``
 * **Default:** ``"top"``
