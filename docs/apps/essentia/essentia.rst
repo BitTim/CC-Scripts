@@ -44,7 +44,7 @@ Structures
 
 ToDo: Insert images here
 
-.. note:: 
+.. important:: 
     You also need to have your :ref:`DNS infrastructure <dns>` set up and running.
 
 .. _essentia_setup:
