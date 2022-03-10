@@ -29,10 +29,10 @@ Welcome to CC-Scripts's documentation!
    :caption: Libraries
    :hidden:
 
-   lib/comlib
-   lib/dnslib
-   lib/loglib
-   lib/uilib
+   lib/comlib/comlib
+   lib/dnslib/dnslib
+   lib/loglib/loglib
+   lib/uilib/uilib
 
 .. toctree::
    :caption: Third Party

@@ -36,16 +36,16 @@ Dependencies
 Functions
 ---------
 
-* :ref:`open(side) <comlib_funcs_open>`
+* :ref:`open() <comlib_funcs_open>`
 * :ref:`getAddress() <comlib_funcs_getAddress>`
-* :ref:`sendRequest(address, request, header, timeout) <comlib_funcs_sendRequest>`
-* :ref:`sendResponse(address, header, status, contents) <comlib_funcs_sendResponse>`
-* :ref:`broadcast(addresses, request, header, timeout) <comlib_funcs_broadcast>`
+* :ref:`sendRequest() <comlib_funcs_sendRequest>`
+* :ref:`sendResponse() <comlib_funcs_sendResponse>`
+* :ref:`broadcast() <comlib_funcs_broadcast>`
 
 .. _comlib_funcs_open:
 
-open(side)
-^^^^^^^^^^
+open()
+^^^^^^
 
 Opens secure connection on modem on specified side
 
@@ -133,8 +133,8 @@ This would print the address of the current computer, e.g. ``b38a:a780:bd82:cd56
 
 .. _comlib_funcs_sendRequest:
 
-sendRequest(address, header, contents, timeout)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sendRequest()
+^^^^^^^^^^^^^
 
 Creates a request packet with the status ``REQUEST``, sends it to the specified address
 and will wait for and return a response packet.
@@ -213,8 +213,8 @@ Created packet: ``{head = "GET", status = "REQUEST", contents = {key = "Hello"}}
 
 .. _comlib_funcs_sendResponse:
 
-sendResponse(address, header, status, contents)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sendResponse()
+^^^^^^^^^^^^^^
 
 Sends a response to the specified receiver with specified head, status and additional contents
 
@@ -272,8 +272,8 @@ Created packet: ``{head = "GET", status = "OK", contents = {value = "Test"}}``
 
 .. _comlib_funcs_broadcast:
 
-broadcast(addresses, header, contents, timeout)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+broadcast()
+^^^^^^^^^^^
 
 Broadcasts a request to multiple receivers and collects all responses. If a response of a receiver fails (:ref:`sendRequest <comlib_funcs_sendRequest>` returns ``-1``), its response will fall back to this one: ``{head = header, status = "FAIL", contents = {}}``.
 

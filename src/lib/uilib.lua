@@ -8,3 +8,155 @@
 --  (C) Copyright 2022,
 --  Tim Anhalt (BitTim)
 -- ================================
+
+local M = {}
+
+-- Class to hold Styles for different UI elements
+M.Style = {}
+M.Style.__index = M.Style
+
+function M.Style:new(normalFG, normalBG, pressedFG, pressedBG, disabledFG, disabledBG)
+    local style = {}
+    setmetatable(style, M.Style)
+
+    if normalFG == nil then normalFG = colors.white end
+    if normalBG == nil then normalBG = colors.gray end
+    if pressedFG == nil then pressedFG = colors.white end
+    if pressedBG == nil then pressedBG = colors.lime end
+    if disabledFG == nil then disabledFG = colors.gray end
+    if disabledBG == nil then disabledBG = colors.lightGray end
+
+    style.normalFG = normalFG
+    style.normalBG = normalBG
+    style.pressedFG = pressedFG
+    style.pressedBG = pressedBG
+    style.disabledFG = disabledFG
+    style.disabledBG = disabledBG
+
+    return style
+end
+
+function M.Style:getColors(pressed, disabled)
+    if pressed == nil then pressed = false end
+    if disabled == nil then disabled = false end
+
+    if disabled then return self.disabledFG, self.disabledBG end
+    if pressed then return self.pressedFG, self.pressedBG end
+    return self.normalFG, self.normalBG
+end
+
+
+
+
+
+
+
+
+
+-- Class to hold properties of a button
+M.Button = {}
+M.Button.__index = M.Button
+
+function M.Button:new(text, x, y, w, h, action, args, toggle, style)
+    local btn = {}
+    setmetatable(btn, M.Button)
+
+    if toggle == nil then toggle = false end
+    if style == nil then style = M.Style:new() end
+
+    btn.text = text
+    btn.x = x
+    btn.y = y
+    btn.w = w
+    btn.h = h
+    btn.style = style
+    
+    btn.action = action
+    btn.args = args
+    btn.toggle = toggle
+    
+    btn.visible = true
+    btn.pressed = false
+    btn.disabled = false
+
+    return btn
+end
+
+-- Function to draw the button
+function M.Button:draw()
+    if self.visible == false then return end
+
+    local fg, bg = self.style:getColors(self.pressed, self.disabled)
+
+    -- Iterate over the area of the button
+    for j = 1, self.h do
+        for i = 1, self.w do
+            term.setCursorPos(self.x + (i - 1), self.y + (j - 1))
+            term.setTextColor(fg)
+            term.setBackgroundColor(bg)
+
+            -- If vertically in the center, draw text
+            if j == math.ceil(self.h / 2) then
+                -- Draw Padding
+                if i == 1 or i == self.w or (i - 1) > string.len(self.text) then
+                    term.write(" ")
+                else
+                    term.write(string.sub(self.text, i - 1, i - 1))
+                end
+            else
+                term.write(" ")
+            end
+
+            term.setTextColor(colors.white)
+            term.setBackgroundColor(colors.black)
+        end
+    end
+end
+
+-- Function to check if a click event occured on the button
+function M.Button:clickEvent(ex, ey)
+    -- Check if button is visible and not disabled
+    if self.visible == flase or self.disabled == true then return end
+
+    -- Check if clicked coordinate is within button
+    if ex >= self.x and ex <= self.x + self.w  and ey >= self.y and ey <= self.y + self.h then
+        -- Check if button needs to be toggled off
+        if self.toggle == true and self.pressed == true then
+            self.pressed = false
+            return
+        end
+
+        self.pressed = true
+        if action and args then local ret = {self.action(table.unpack(args))} end
+
+        -- Reset button if not in toggle mode
+        if self.toggle == false then
+            self:draw()
+
+            sleep(0.1)
+            self.pressed = false
+
+            self.draw()
+        end
+    end
+end
+
+-- Function to disable the button
+function M.Button:disable(status)
+    if status == nil then status = not self.disabled end
+    self.disabled = status
+end
+
+-- Function to show the button
+function M.Button:show()
+    self.visible = true
+    self.disabled = false
+end
+
+-- Function to hide the button
+function M.Button:hide()
+    self.visible = false
+    self.disabled = true
+end
+
+return M

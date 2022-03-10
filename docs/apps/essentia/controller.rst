@@ -328,7 +328,7 @@ An instance of a secure modem object
 
 .. code-block:: lua
     
-    local nbtPeripherals = {}
+    local sModem = nil
 
 * **Type:** ``sModem``
 * **Default:** ``nil``

@@ -65,7 +65,7 @@ The address of the DNS Server.
 * **Default:** ``""``
 
 .. note::
-   This property is set using :ref:`init(address) <dnslib_funcs_init>`
+   This property is set using :ref:`init() <dnslib_funcs_init>`
 
 ----
 
@@ -82,13 +82,13 @@ Functions
 ---------
 
 * :ref:`init() <dnslib_funcs_init>`
-* :ref:`lookup(domain) <dnslib_funcs_lookup>`
-* :ref:`lookupMultiple(domains) <dnslib_funcs_lookupMultiple>`
+* :ref:`lookup() <dnslib_funcs_lookup>`
+* :ref:`lookupMultiple() <dnslib_funcs_lookupMultiple>`
 
 .. _dnslib_funcs_init:
 
-init(address)
-^^^^^^^^^^^^^
+init()
+^^^^^^
 
 Initializes DNSLib and sets :ref:`dnsAddress <dnslib_prop_dnsAddress>` to an address read from the ``/.dnsAddress`` file. If the file does not exist the function will return ``-1``.
 
@@ -131,8 +131,8 @@ This would initialize DNSLib and set :ref:`dnsAddress <dnslib_prop_dnsAddress>` 
 
 .. _dnslib_funcs_lookup:
 
-lookup(domain)
-^^^^^^^^^^^^^^
+lookup()
+^^^^^^^^
 
 Looks up the specified domain and returns the address of the registered server.
 
@@ -187,8 +187,8 @@ Here ``address`` would contain the address the :ref:`DNS Server <dns>` knows for
 
 .. _dnslib_funcs_lookupMultiple:
 
-lookupMultiple(domains)
-^^^^^^^^^^^^^^^^^^^^^^^
+lookupMultiple()
+^^^^^^^^^^^^^^^^
 
 Looks up the multiple domains and returns the addresses of the registered servers.
 

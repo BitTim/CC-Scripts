@@ -22,13 +22,13 @@ A library for logging to the screen, which is either the built-in computer scree
 Functions
 ---------
 
-* :ref:`init(title, version) <loglib_funcs_init>`
-* :ref:`log(tag, msg) <loglib_funcs_log>`
+* :ref:`init() <loglib_funcs_init>`
+* :ref:`log() <loglib_funcs_log>`
 
 .. _loglib_funcs_init:
 
-init(title, version)
-^^^^^^^^^^^^^^^^^^^^
+init()
+^^^^^^
 
 Initializes LogLib with setting the title in the computer and, if a monitor is present, setting the title in the monitor and redirecting output to the monitor.
 
@@ -78,8 +78,8 @@ This would initialize LogLib and would display the text ``Test PC V1.0`` at the 
 
 .. _loglib_funcs_log:
 
-log(tag, msg)
-^^^^^^^^^^^^^
+log()
+^^^^^
 
 Loggs a message with a tag and the current in-game time to the screen
 
