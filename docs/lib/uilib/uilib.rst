@@ -25,5 +25,6 @@ Classes
     :maxdepth: 1
 
     style
+    label
     button
     progbar

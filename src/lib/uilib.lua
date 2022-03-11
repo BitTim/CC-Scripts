@@ -52,6 +52,57 @@ end
 
 
 
+-- Class that holds properties for a label
+
+M.Label = {}
+M.Label.__index = M.Label
+
+function M.Label:new(text, x, y, style)
+    local label = {}
+    setmetatable(label, M.Label)
+
+    if style == nil then style = M.Style:new() end
+
+    label.text = text
+    label.x = x
+    label.y = y
+    label.style = style
+
+    label.visible = true
+
+    return label
+end
+
+-- Draws the Label
+function M.Label:draw()
+    if self.visible == false then return end
+
+    local fg, bg = self.style:getColors(false, false)
+
+    term.setTextColor(fg)
+    term.setBackgroundColor(bg)
+    term.setCursorPos(x, y)
+
+    term.write(self.text)
+
+    term.setTextColor(colors.white)
+    term.setBackgroundColor(colors.black)
+end
+
+-- Function to show the label
+function M.Label:show()
+    self.visible = true
+end
+
+-- Function to hide the label
+function M.Label:hide()
+    self.visible = false
+end
+
+
+
+
+
 
 -- Class to hold properties of a button
 M.Button = {}
@@ -196,6 +247,8 @@ end
 
 -- Function to draw the progress bar
 function M.ProgressBar:draw()
+    if self.visible == false then return end
+
     local scaledSize = self.w
     if self.vertical then scaledSize = self.h end
 
@@ -249,13 +302,13 @@ end
 -- Function to show the button
 function M.ProgressBar:show()
     self.visible = true
-    self.disabled = false
 end
 
 -- Function to hide the button
 function M.ProgressBar:hide()
     self.visible = false
-    self.disabled = true
 end
+
+-- TODO: Add page handler for multiple pages of UI
 
 return M

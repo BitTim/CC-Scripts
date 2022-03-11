@@ -3,6 +3,8 @@
 ProgressBar
 ===========
 
+A UI element that shows a bar, that can be filled to different amounts in multiple orientations.
+
 **Contents:**
 
 * :ref:`Properties <uilib_progbar_props>`
@@ -209,7 +211,7 @@ Enables inverted mode for the progress bar.
 style
 ^^^^^
 
-Style of the progress bar
+Style of the progress bar.
 
 .. code-block:: lua
 
@@ -319,7 +321,10 @@ Function to create a new instance of :ref:`ProgressBar <uilib_progbar>`.
     * - **style**
       - :ref:`uilib.Style <uilib_style>`
       - :ref:`Default Style <uilib_style_funcs_new>`
-      - Style of the progress bar for various states.
+      - Style of the progress bar.
+
+.. note:: 
+    Progress bars can only use the :ref:`default state <uilib_style_states>`.
 
 **Returns:**
 

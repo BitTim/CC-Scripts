@@ -3,6 +3,8 @@
 Button
 ======
 
+A UI element, that is clickable and executes a function when it is clicked.
+
 **Contents:**
 
 * :ref:`Properties <uilib_button_props>`
@@ -151,7 +153,7 @@ Height of the button.
 style
 ^^^^^
 
-Style of the button
+Style of the button.
 
 .. code-block:: lua
 
