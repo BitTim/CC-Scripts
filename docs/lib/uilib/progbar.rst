@@ -324,7 +324,7 @@ Function to create a new instance of :ref:`ProgressBar <uilib_progbar>`.
       - Style of the progress bar.
 
 .. note:: 
-    Progress bars can only use the :ref:`default state <uilib_style_states>`.
+    Progress bars can only use the :ref:`default state <uilib_style_states>` for styling.
 
 **Returns:**
 

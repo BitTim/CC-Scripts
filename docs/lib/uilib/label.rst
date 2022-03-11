@@ -184,7 +184,7 @@ Function to create a new instance of :ref:`Label <uilib_label>`.
       - Style of the label.
 
 .. note:: 
-    Labels can only use the :ref:`default state <uilib_style_states>`.
+    Labels can only use the :ref:`default state <uilib_style_states>` for styling.
 
 **Returns:**
 
