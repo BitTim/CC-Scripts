@@ -249,7 +249,7 @@ Contains information about the button being clicked or not.
 * **Default:** ``false``
 
 .. important:: 
-    This property is not meant for being set directly and is usually only set with :ref:`clickEvent() <uilib_button_funcs_clickEvent>`.
+    This property is not meant for being set directly and is usually only set by :ref:`clickEvent() <uilib_button_funcs_clickEvent>`.
 
 ----
 
