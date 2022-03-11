@@ -159,4 +159,103 @@ function M.Button:hide()
     self.disabled = true
 end
 
+
+
+
+
+
+
+
+-- Class to hold properties of a progress bar
+M.ProgressBar = {}
+M.ProgressBar.__index = M.ProgressBar
+
+function M.ProgressBar:new(minVal, maxVal, val, x, y, w, h, vertical, inverted, style)
+    if vertical == nil then vertical = false end
+    if inverted == nil then inverted = false end
+    if style == nil then style = M.Style:new() end
+
+    local progbar = {}
+    setmetatable(progbar, M.ProgressBar)
+
+    progbar.minVal = minVal
+    progbar.maxVal = maxVal
+    progbar.val = val
+    progbar.x = x
+    progbar.y = y
+    progbar.w = w
+    progbar.h = h
+    progbar.vertical = vertical
+    progbar.inverted = inverted
+    progbar.style = style
+
+    progbar.visible = true
+
+    return progbar
+end
+
+-- Function to draw the progress bar
+function M.ProgressBar:draw()
+    local scaledSize = self.w
+    if self.vertical then scaledSize = self.h end
+
+    -- Calculate number of filled pixels
+    local numFilled = (self.val - self.minVal) / (self.maxVal - self.minVal) * scaledSize
+    local numSolidFilled = math.floor(numFilled)
+    local numPartlyFilled = 1
+    if numFilled == math.floor(numFilled) then numPartlyFilled = 0 end
+    
+    -- Get colors
+    local fg, bg = self.style:getColors(false, false)
+
+    -- Iterate over all pixels
+    for j = 1, self.h do
+        for i = 1, self.w do
+            -- Invert if needed
+            local cx = i - 1
+            local cy = j - 1
+
+            if self.inverted then
+                cx = (self.w - 1) - cx
+                cy = (self.h - 1) - cy
+            end
+
+            -- Set cursor pos to current pixel
+            term.setCursorPos(self.x + cx, self.y + cy)
+
+            local pos = i
+            if self.vertical then pos = ((self.h + 1) - j) end
+
+            -- Check how the current pixel should be drawn
+            if pos <= numSolidFilled then
+                term.setBackgroundColor(fg) -- This is not a typo.
+                term.write(" ")
+            elseif pos == numSolidFilled + 1 and numPartlyFilled == 1 then
+                term.setTextColor(fg)
+                term.setBackgroundColor(bg)
+                term.write("\x7f")
+            else
+                term.setBackgroundColor(bg)
+                term.write(" ")
+            end
+
+            -- Reset colors
+            term.setTextColor(colors.white)
+            term.setBackgroundColor(colors.black)
+        end
+    end
+end
+
+-- Function to show the button
+function M.ProgressBar:show()
+    self.visible = true
+    self.disabled = false
+end
+
+-- Function to hide the button
+function M.ProgressBar:hide()
+    self.visible = false
+    self.disabled = true
+end
+
 return M

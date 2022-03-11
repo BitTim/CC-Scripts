@@ -320,11 +320,11 @@ Creates a new instance of :ref:`Button <uilib_button>` and returns it.
     * - **x**
       - ``number``
       - ``nil``
-      - X component of position of button.
+      - X component of position of the button.
     * - **y**
       - ``number``
       - ``nil``
-      - Y component of position of button.
+      - Y component of position of the button.
     * - **w**
       - ``number``
       - ``nil``
@@ -418,7 +418,7 @@ An instance of :ref:`Button <uilib_button>` will be created with the :ref:`new()
 clickEvent()
 ^^^^^^^^^^^^
 
-Function that checks if a click event was on the button and executes :ref:`action <uilib_button_props_action>` if it was.
+Function that checks if a click event was on the button and executes :ref:`action <uilib_button_props_action>` if it was. It will not execute the function if the button is either disabled or not visible.
 
 .. code-block:: lua
 

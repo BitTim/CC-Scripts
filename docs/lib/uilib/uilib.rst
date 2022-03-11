@@ -5,9 +5,6 @@ UILib
 
 A library for various UI actions and elements, like drawing and chacking for events.
 
-.. danger:: 
-    Work in Progress
-
 **Contents:**
 
 * :ref:`Classes <uilib_classes>`
@@ -29,3 +26,4 @@ Classes
 
     style
     button
+    progbar
