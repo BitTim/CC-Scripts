@@ -5,6 +5,11 @@ ProgressBar
 
 A UI element that shows a bar, that can be filled to different amounts in multiple orientations.
 
+.. figure:: images/progbar.png
+  :alt: Visual example of progress bar
+
+  Different kinds of porgress bar.
+
 **Contents:**
 
 * :ref:`Properties <uilib_progbar_props>`

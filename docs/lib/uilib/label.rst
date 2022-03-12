@@ -5,6 +5,11 @@ Label
 
 A UI element, that displays plain text.
 
+.. figure:: images/label.png
+  :alt: Visual example of Labels
+
+  Labels with two styles.
+
 **Contents:**
 
 * :ref:`Properties <uilib_label_props>`

@@ -5,6 +5,11 @@ Button
 
 A UI element, that is clickable and executes a function when it is clicked.
 
+.. figure:: images/btn.png
+  :alt: Visual examples of buttons in three different states
+
+  Button in three states: Default, Pressed and Disabled.
+
 **Contents:**
 
 * :ref:`Properties <uilib_button_props>`
