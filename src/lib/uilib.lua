@@ -81,7 +81,7 @@ function M.Label:draw()
 
     term.setTextColor(fg)
     term.setBackgroundColor(bg)
-    term.setCursorPos(x, y)
+    term.setCursorPos(self.x, self.y)
 
     term.write(self.text)
 
@@ -178,17 +178,22 @@ function M.Button:clickEvent(ex, ey)
         end
 
         self.pressed = true
-        if action and args then local ret = {self.action(table.unpack(args))} end
+        self:draw()
+
+        local ret = nil
+        if self.action and self.args then
+            ret = {self.action(table.unpack(self.args))}
+        end
 
         -- Reset button if not in toggle mode
         if self.toggle == false then
-            self:draw()
-
             sleep(0.1)
             self.pressed = false
 
-            self.draw()
+            self:draw()
         end
+
+        if ret then return ret end
     end
 end
 
