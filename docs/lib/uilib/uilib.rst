@@ -25,6 +25,8 @@ Classes
     :maxdepth: 1
 
     style
+    group
+    pageHandler
     label
     button
     progbar

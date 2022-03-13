@@ -326,7 +326,7 @@ end
 -- Class for handling groups of UI elements
 
 M.Group = {}
-M.Group.__index() = M.Group
+M.Group.__index = M.Group
 
 function M.Group:new(x, y, elements)
 	local group = {}
