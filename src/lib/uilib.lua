@@ -321,18 +321,131 @@ end
 
 
 
+-- TODO: Write docs for Group and PageHandler
+
+-- Class for handling groups of UI elements
+
+M.Group = {}
+M.Group.__index() = M.Group
+
+function M.Group:new(x, y, elements)
+	local group = {}
+	setmetatable(group, M.Group)
+	
+	if elements == nil then elements = {} end
+	
+	group.x = x
+	group.y = y
+	group.elements = elements
+	
+	group.visible = true
+	
+	return group
+end
+
+-- Function to draw the entire Group
+function M.Group:draw()
+	if self.visible == false then return end
+	
+	for i = 1, #self.elments do
+		self.elements[i]:draw()
+	end
+end
+
+-- Functon to add an element to the group
+function M.Group:add(element, id)
+	if id == nil or id == "" then return end  
+	if element == nil then return end
+	
+	self.elements[id] = element
+end
+
+-- Function to remove an element from the group
+function M.Group:remove(id)
+	if id == nil or id == "" then return end
+	self.elements[id] = nil
+end
+
+-- Function to get a specific element from the group
+function M.Group:get(id)
+	if id == nil or id == "" then return -1 end
+	return self.elements[id]
+end
+
+-- Function to make group visible
+function M.Group:show()
+	self.visible = true
+end
+
+-- Function to make group invisible
+function M.Group:hide()
+	self.visible = false
+end
+
+
+
+
+
+
+
+
 -- Class for handling pages of UI elements
 
-M.Page = {}
-M.Page.__index = M.Page
+M.PageHandler = {}
+M.PageHandler.__index = M.PageHandler
 
-function M.Page:new()
-    local page = {}
-    setmetatable(page, M.Page)
+function M.PageHandler:new(pages, active)
+    local pageHelper = {}
+    setmetatable(pageHelper, M.PageHelper)
 
-    
+	if pages == nil then
+		pages = {}
+		active = 1
+	end
+	if active == nil then active = 1 end
+	
+    pageHandler.pages = pages
+	self.active = active
 
-    return page
+    return pageHelper
+end
+
+-- Function to draw the current page
+function M.PageHandler:draw()
+	local page = self:get(self.active)
+	page:draw()
+end
+
+-- Function to add a page
+function M.PageHandler:add(page, index)
+	if index == nil then index = #self.pages + 1 end
+	self.pages[index] = index
+end
+
+-- Function to remove a page
+function M.PageHandler:remove(index)
+	if index == nil then return end
+	self.pages[index] = nil
+end
+
+-- Function to get a specific page
+function M.PageHandler:get(index)
+	if index == nil then return -1 end
+	return self.pages[index]
+end
+
+-- Function to move to next page
+function M.PageHandler:next()
+	if self.active + 1 > #self.pages then return end
+	self.active = self.active + 1
+	self:draw()
+end
+
+-- Function to move to previous page
+function M.PageHandler:prev()
+	if self.active - 1 < 1 then return end
+	self.active = self.active - 1
+	self:draw()
 end
 
 return M
