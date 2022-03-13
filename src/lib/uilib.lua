@@ -314,6 +314,25 @@ function M.ProgressBar:hide()
     self.visible = false
 end
 
--- TODO: Add page handler for multiple pages of UI
+
+
+
+
+
+
+
+-- Class for handling pages of UI elements
+
+M.Page = {}
+M.Page.__index = M.Page
+
+function M.Page:new()
+    local page = {}
+    setmetatable(page, M.Page)
+
+    
+
+    return page
+end
 
 return M
