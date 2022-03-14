@@ -347,8 +347,13 @@ end
 function M.Group:draw()
 	if self.visible == false then return end
 	
-	for i = 1, #self.elments do
-		self.elements[i]:draw()
+	for _, v in pairs(self.elments) do
+        local ox, oy = v.x, v.y
+
+        v.x = ox + self.x - 1
+        v.y = oy + self.y - 1
+
+		v:draw()
 	end
 end
 

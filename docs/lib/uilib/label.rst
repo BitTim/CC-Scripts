@@ -130,6 +130,8 @@ Contains information about the label being visible or not.
 .. note:: 
     Please use :ref:`show() <uilib_label_funcs_show>` to enable visibility and :ref:`hide() <uilib_label_funcs_hide>` to disable visibility of the button.
 
+----
+
 
 
 
