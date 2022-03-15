@@ -321,7 +321,7 @@ end
 
 
 
--- TODO: Write docs for Group and PageHandler
+-- TODO: Write docs for PageHandler
 
 -- Class for handling groups of UI elements
 
