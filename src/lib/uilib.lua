@@ -346,14 +346,17 @@ end
 -- Function to draw the entire Group
 function M.Group:draw()
 	if self.visible == false then return end
-	
-	for _, v in pairs(self.elments) do
+
+	for k, v in pairs(self.elements) do
         local ox, oy = v.x, v.y
 
         v.x = ox + self.x - 1
         v.y = oy + self.y - 1
 
 		v:draw()
+
+        self.elements[k].x = ox
+        self.elements[k].y = oy
 	end
 end
 
@@ -400,8 +403,8 @@ M.PageHandler = {}
 M.PageHandler.__index = M.PageHandler
 
 function M.PageHandler:new(pages, active)
-    local pageHelper = {}
-    setmetatable(pageHelper, M.PageHelper)
+    local pageHandler = {}
+    setmetatable(pageHandler, M.PageHandler)
 
 	if pages == nil then
 		pages = {}
@@ -412,7 +415,7 @@ function M.PageHandler:new(pages, active)
     pageHandler.pages = pages
 	self.active = active
 
-    return pageHelper
+    return pageHandler
 end
 
 -- Function to draw the current page
@@ -424,7 +427,7 @@ end
 -- Function to add a page
 function M.PageHandler:add(page, index)
 	if index == nil then index = #self.pages + 1 end
-	self.pages[index] = index
+	self.pages[index] = page
 end
 
 -- Function to remove a page
@@ -441,15 +444,23 @@ end
 
 -- Function to move to next page
 function M.PageHandler:next()
+    self:get(self.active).hide()
+
 	if self.active + 1 > #self.pages then return end
 	self.active = self.active + 1
+
+    self:get(self.active).show()
 	self:draw()
 end
 
 -- Function to move to previous page
 function M.PageHandler:prev()
+    self:get(self.active).hide()
+
 	if self.active - 1 < 1 then return end
 	self.active = self.active - 1
+
+    self:get(self.active).show()
 	self:draw()
 end
 

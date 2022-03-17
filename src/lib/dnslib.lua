@@ -12,7 +12,7 @@
 --  Dependencies
 -- --------------------------------
 
-local comlib = require(".\\comlib.lua")
+local comlib = require("/lib/comlib")
 
 
 

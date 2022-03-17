@@ -12,7 +12,7 @@
 --  Dependencies
 -- --------------------------------
 
-local ecnet = require(".\\ThirdParty\\ecnet.lua")
+local ecnet = require("/lib/ThirdParty/ecnet")
 
 
 
