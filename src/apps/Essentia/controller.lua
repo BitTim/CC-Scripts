@@ -73,9 +73,9 @@ local function sendPulse(id)
     local rid = 2 ^ (id - 1)
     redstone.setBundledOutput(outputSide, rid)
     sleep(0.1)
-    restone.setBundledOutput(outputSide, 0)
+    redstone.setBundledOutput(outputSide, 0)
 
-    log("SendPulse", "Setting redstone output to: " .. id)
+    loglib.log("SendPulse", "Setting redstone output to: " .. id)
 end
 
 
@@ -92,14 +92,13 @@ end
 -- Handler for FLOW request
 local function flow(s, p)
     local lid = getLocalID(p.contents.aspect)
-    log("Flow", "Converted ID to local ID: " .. p.contents.aspect .. " -> " .. lid)
+    loglib.log("Flow", "Converted ID to local ID: " .. p.contents.aspect .. " -> " .. lid)
 
     if lid ~= 0 then
         sendPulse(lid)
-        sleep(3)
-        comlib.sendResponse(s, p.head, "OK", nil)
+        comlib.sendResponse(sModem, s, p.head, "OK", nil)
     else
-        comlib.sendResponse(s, p.head, "FAIL", nil)
+        comlib.sendResponse(sModem, s, p.head, "FAIL", nil)
     end
 
     loglib.log("Flow", "Released 5 essentia of aspect: " .. p.contents.aspect .. " (Local ID: " .. lid .. ")")
@@ -112,15 +111,15 @@ local function probe(s, p)
 
     if lid ~= 0 then
         if nbtPeripherals[lid].has_nbt() then
-            local nbt = nbtPeripherals.read_nbt()
+            local nbt = nbtPeripherals[lid].read_nbt()
             local nbtAspect, nbtAmount = nbt.Aspect, nbt.Amount
 		
-			comlib.sendResponse(s, p.head, "OK", {aspect = nbtAspect, amount = nbtAmount})
+			comlib.sendResponse(sModem, s, p.head, "OK", {aspect = nbtAspect, amount = nbtAmount})
         else
-			comlib.sendResponse(s, p.head, "FAIL", nil)
+			comlib.sendResponse(sModem, s, p.head, "FAIL", nil)
 		end
     else
-		comlib.sendResponse(s, p.head, "FAIL", nil)
+		comlib.sendResponse(sModem, s, p.head, "FAIL", nil)
 	end
 end
 
@@ -138,6 +137,8 @@ end
 sModem = comlib.open(modemSide) -- Create Secure Modem
 loglib.init(title, version) -- Initialize LogLib
 loglib.log("Address", comlib.getAddress()) -- Print Address
+
+wrapNBTPeripherals()
 
 -- Main Loop
 while true do

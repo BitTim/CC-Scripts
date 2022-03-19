@@ -15,19 +15,41 @@
 
 local comlib = require("/lib/comlib")
 local dnslib = require("/lib/dnslib")
-local loglib = require("/lib/loglib")
 local uilib = require("/lib/uilib")
 
 -- --------------------------------
 --  Configurable Properties
 -- --------------------------------
 
+local modemSide = "top"
+local serverDomain = "essentia.dl"
 
 
-local closedLabelStyle = uilib.Style:new(colors.red, colors.black)
-local openLabelStyle = uilib.Style:new(colors.lime, colors.black)
 
 
+
+
+
+
+-- --------------------------------
+--  Internal Properties
+-- --------------------------------
+
+local modules = {}
+local sModem
+local serverAddress
+local pages = uilib.PageHandler:new()
+
+
+
+
+
+
+
+
+-- --------------------------------
+--  Classes
+-- --------------------------------
 
 local Module = {}
 Module.__index = Module
@@ -38,7 +60,6 @@ function Module:new(x, y, aspect, title, color)
 
     mod.aspect = aspect
     mod.amount = 0
-    mod.status = false
 
     mod.selAmount = 0
 
@@ -53,47 +74,28 @@ function Module:new(x, y, aspect, title, color)
     local progbar = uilib.ProgressBar:new(0, 250, mod.amount, 2, 5, 15, 1, nil, false, false, uilib.Style:new(color))
     mod.ui:add(progbar, "progbar")
 
-    local statusLabel = uilib.Label:new("Closed", 2, 7, nil, closedLabelStyle)
-    mod.ui:add(statusLabel, "statusLabel")
-
-    local runBtn = uilib.Button:new(mod.selAmount, 5, 9, 9, 3, nil, Module.run, {mod}, false)
+    local runBtn = uilib.Button:new(mod.selAmount, 5, 7, 9, 3, nil, Module.run, {mod}, false)
     mod.ui:add(runBtn, "runBtn")
     
-    local lessBtn = uilib.Button:new("<", 2, 9, 3, 3, nil, Module.less, {mod}, false)
+    local lessBtn = uilib.Button:new("<", 2, 7, 3, 3, nil, Module.less, {mod}, false)
     mod.ui:add(lessBtn, "lessBtn")
 
-    local moreBtn = uilib.Button:new(">", 14, 9, 3, 3, nil, Module.more, {mod}, false)
+    local moreBtn = uilib.Button:new(">", 14, 7, 3, 3, nil, Module.more, {mod}, false)
     mod.ui:add(moreBtn, "moreBtn")
 
     return mod
 end
 
-function Module:update(amount, status, selAmount)
+function Module:update(amount, selAmount)
     if amount == nil then amount = self.amount end
-    if status == nil then status = self.status end
     if selAmount == nil then selAmount = self.selAmount end
 
     self.amount = amount
-    self.status = status
     self.selAmount = selAmount
 
     self.ui:get("amountLabel").text = "x" .. amount
     self.ui:get("progbar").val = amount
     self.ui:get("runBtn").text = selAmount
-
-    local statusText = ""
-    local statusStyle = nil
-
-    if status then
-        statusText = "Opened"
-        statusStyle = openLabelStyle
-    else
-        statusText = "Closed"
-        statusStyle = closedLabelStyle
-    end
-
-    self.ui:get("statusLabel").text = statusText
-    self.ui:get("statusLabel").style = statusStyle
 
     if selAmount > self.amount then
         self.ui:get("runBtn").disabled = true
@@ -114,26 +116,39 @@ function Module:less()
     local selAmount = self.selAmount - 5
     if selAmount < 0 then selAmount = 0 end
 
-    self:update(nil, nil, selAmount)
+    self:update(nil, selAmount)
 end
 
 function Module:more()
     local selAmount = self.selAmount + 5
     if selAmount > 250 then selAmount = 250 end
 
-    self:update(nil, nil, selAmount)
+    self:update(nil, selAmount)
+end
+
+function Module:probe()
+    local ret = comlib.sendRequest(sModem, serverAddress, "PROBE", {aspect = self.aspect})
+    if ret ~= -1 and ret.status == "OK" then self:update(ret.contents.amount, nil) end
 end
 
 function Module:run()
-    -- TODO: Insert code to communicate with servers here
+    for i = 5, self.selAmount, 5 do
+        local ret = comlib.sendRequest(sModem, serverAddress, "FLOW", {aspect = self.aspect})
+        if i + 5 <= self.selAmount then sleep(10) end
+        self:probe()
+    end
 end
 
 
 
 
-local pages = uilib.PageHandler:new()
 
 
+
+
+-- --------------------------------
+--  Local Functions
+-- --------------------------------
 
 local function createModule(page, x, y, aspect, title, color)
     local mod = Module:new(x, y, aspect, title, color)
@@ -150,22 +165,45 @@ local function createModule(page, x, y, aspect, title, color)
     return mod
 end
 
+local function probeAll()
+    for i = 1, #modules do
+        modules[i]:probe()
+    end
+end
 
 
-local modules = {
-    createModule(1, 1, 1, "instrumentum", "Instrumentum", colors.blue),
-    createModule(1, 17, 1, "vitium", "Vitium", colors.purple)
-}
+
+
+
+
+
+
+-- --------------------------------
+--  Main Program
+-- --------------------------------
+
+-- TODO: Add monitor
+-- TODO: Add refresh button to module
+-- TODO: Add reset button to module
+
+-- TODO: Add refresh all button
+-- TODO: Add flow all button
+-- TODO: Add reset all button
+
+sModem = comlib.open(modemSide)                           -- Create Secure Modem
+dnslib.init(sModem)                                       -- Initialize DNSLib
+serverAddress = dnslib.lookup(serverDomain)               -- Look up server address
 
 term.clear()
 term.setCursorPos(1, 1)
 
-modules[1]:update(249, true)
-modules[2]:update(3, false)
+table.insert(modules, createModule(1, 1, 1, "sensus", "Sensus", colors.lightBlue))
+table.insert(modules, createModule(1, 17, 1, "preamunio", "Preamunio", colors.cyan))
+table.insert(modules, createModule(1, 34, 1, "victus", "Victus", colors.red))
+
+probeAll()
 
 while true do
-    -- TODO: Add probing here
-
     local ed = table.pack(os.pullEvent())
     local e = ed[1]
 

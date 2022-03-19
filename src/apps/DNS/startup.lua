@@ -7,7 +7,7 @@ local sModem = ecnet.wrap(modem)
 term.setTextColor(colors.yellow)
 term.clear()
 term.setCursorPos(1, 1)
-print("DNS Server v1.0")
+print("DNS Server v1.1")
 
 --Route Output to Monitor
 local mon = peripheral.find("monitor")
@@ -23,7 +23,7 @@ term.setTextColor(colors.lightGray)
 
 --Function for Logging
 local log = function(head, str)
-    logStr = "<" .. os.time() .. "> [" .. head .. "]: " .. str
+    local logStr = "<" .. os.time() .. "> [" .. head .. "]: " .. str
     print(logStr)
 end
 
@@ -45,6 +45,11 @@ dbFile.close()
 --Print Address
 log("Address", ecnet.address)
 
+--Create file with address
+local addressFile = fs.open(".dnsAddress", "w")
+addressFile.write(ecnet.address)
+addressFile.close()
+
 --Main Loop
 while true do
     --Receive Packet
@@ -57,11 +62,11 @@ while true do
     --Check Packet header
     if p.head == "LOOKUP" then
         --Find address of the requested domain
-        local address = db[p.domain]
-        log("Lookup", "Looked up " .. p.domain .. " -> " .. textutils.serialize(address))
+        local address = db[p.contents.domain]
+        log("Lookup", "Looked up " .. p.contents.domain .. " -> " .. textutils.serialize(address))
         
         --Create reply packet
-        local p = {head = "LOOKUP", address = address}
+        local p = {head = "LOOKUP", status = "OK", contents = {address = address}}
         local reply = textutils.serialize(p)
         
         --Send reply packet

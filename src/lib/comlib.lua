@@ -29,7 +29,7 @@ local M = {}
 
 -- Open secure modem
 function M.open(side)
-    local modem = peripheral.wrap("top")
+    local modem = peripheral.wrap(side)
     local sModem = ecnet.wrap(modem)
     return sModem
 end
@@ -40,9 +40,10 @@ function M.getAddress()
 end
 
 -- Send a request and wait for response
-function M.sendRequest(address, header, contents, timeout)
+function M.sendRequest(sModem, address, header, contents, timeout)
     -- Set defult values for not specified variables
     if timeout == nil then timeout = 3 end
+    if sModem == nil then return end
 
     -- Connect to Server
     local ret = sModem.connect(address, 3)
@@ -77,7 +78,9 @@ function M.sendRequest(address, header, contents, timeout)
 end
 
 -- Send a response to a request
-function M.sendResponse(address, header, status, contents)
+function M.sendResponse(sModem, address, header, status, contents)
+    if sModem == nil then return end
+
     -- Create response packet
 	local p = {head = header, status = status, contents = contents}
     local reply = textutils.serialize(p)
@@ -88,15 +91,16 @@ function M.sendResponse(address, header, status, contents)
 end
 
 -- Broadcast a request to multiple receivers
-function M.broadcast(addresses, header, contents, timeout)
+function M.broadcast(sModem, addresses, header, contents, timeout)
     -- Set defult values for not specified variables
     if timeout == nil then timeout = 3 end
+    if sModem == nil then return end
 
     local responses = {}
 
     -- Iterate over all addresses
     for i = 1, #addresses do
-        local response = M.sendRequest(addresses[i], header, contents, timeout)
+        local response = M.sendRequest(sModem, addresses[i], header, contents, timeout)
         if response == -1 then response = {head = header, status = "FAIL", contents = {}} end
         responses[i] = response
     end

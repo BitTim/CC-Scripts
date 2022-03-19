@@ -27,10 +27,11 @@ local comlib = require("/lib/comlib")
 
 local M = {}
 
+M.sModem = nil
 M.dnsAddress = ""
 
 -- Initialize DNSLib
-function M.init()
+function M.init(sModem)
     -- Open DNS address file
     local dnsAddressFile = fs.open("/.dnsAddress", "r")
     if dnsAddressFile == nil then return -1 end
@@ -46,17 +47,18 @@ function M.init()
 
     -- Set DNS address
     M.dnsAddress = dnsAddress
+    M.sModem = sModem
     return true
 end
 
 -- Lookup domain
 function M.lookup(domain)
-    local response = comlib.sendRequest(M.dnsAddress, "LOOKUP", {domain = domain})
+    local response = comlib.sendRequest(M.sModem, M.dnsAddress, "LOOKUP", {domain = domain})
     if response == -1 then return -1 end
 
     -- TODO: Implement check for not found domain
 
-    return response.contents[address]
+    return response.contents.address
 end
 
 -- Lookup multiple domains

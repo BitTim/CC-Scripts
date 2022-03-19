@@ -9,7 +9,7 @@ local dns = "c762:b905:a388:cbb6:f317"
 local run = true
 
 term.setTextColor(colors.yellow)
-print("DNS Util v1.0")
+print("DNS Util v1.1")
 
 --Connect to DNS
 term.setTextColor(colors.lightGray)
@@ -92,7 +92,7 @@ local lookup = function(args)
     
     --Create packet for lookup
     print("Creating packet...")
-    local p = {head = "LOOKUP", domain = args[2]}
+    local p = {head = "LOOKUP", status = "REQUEST", contents = {domain = args[2]}}
     local msg = textutils.serialize(p)
     
     --Send packet and receive reply with error handling
@@ -106,7 +106,7 @@ local lookup = function(args)
     end
 
     --Check if address is nil
-    if ret.address == nil then
+    if ret.contents == nil or ret.contents.address == nil then
         term.setTextColor(colors.orange)
         print("Unknown domain")
         return
@@ -114,7 +114,7 @@ local lookup = function(args)
 
     --Print address
     term.setTextColour(colors.green)
-    print("Address: " .. ret.address)
+    print("Address: " .. ret.contents.address)
 end
 
 --Function to register new DNS entries
