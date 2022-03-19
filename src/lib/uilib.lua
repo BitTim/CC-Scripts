@@ -57,7 +57,7 @@ end
 M.Label = {}
 M.Label.__index = M.Label
 
-function M.Label:new(text, x, y, style)
+function M.Label:new(text, x, y, parent, style)
     local label = {}
     setmetatable(label, M.Label)
 
@@ -66,6 +66,7 @@ function M.Label:new(text, x, y, style)
     label.text = text
     label.x = x
     label.y = y
+    label.parent = parent
     label.style = style
 
     label.visible = true
@@ -78,10 +79,13 @@ function M.Label:draw()
     if self.visible == false then return end
 
     local fg, bg = self.style:getColors(false, false)
+    local x, y = self.x, self.y
+    
+    if self.parent then x, y = self.parent:convLocalToGlobal(x, y) end
 
     term.setTextColor(fg)
     term.setBackgroundColor(bg)
-    term.setCursorPos(self.x, self.y)
+    term.setCursorPos(x, y)
 
     term.write(self.text)
 
@@ -108,7 +112,7 @@ end
 M.Button = {}
 M.Button.__index = M.Button
 
-function M.Button:new(text, x, y, w, h, action, args, toggle, style)
+function M.Button:new(text, x, y, w, h, parent, action, args, toggle, style)
     local btn = {}
     setmetatable(btn, M.Button)
 
@@ -120,6 +124,7 @@ function M.Button:new(text, x, y, w, h, action, args, toggle, style)
     btn.y = y
     btn.w = w
     btn.h = h
+    btn.parent = parent
     btn.style = style
     
     btn.action = action
@@ -138,11 +143,14 @@ function M.Button:draw()
     if self.visible == false then return end
 
     local fg, bg = self.style:getColors(self.pressed, self.disabled)
+    local x, y = self.x, self.y
+
+    if self.parent then x, y = self.parent:convLocalToGlobal(x, y) end
 
     -- Iterate over the area of the button
     for j = 1, self.h do
         for i = 1, self.w do
-            term.setCursorPos(self.x + (i - 1), self.y + (j - 1))
+            term.setCursorPos(x + (i - 1), y + (j - 1))
             term.setTextColor(fg)
             term.setBackgroundColor(bg)
 
@@ -170,7 +178,7 @@ function M.Button:clickEvent(ex, ey)
     if self.visible == flase or self.disabled == true then return end
 
     -- Check if clicked coordinate is within button
-    if ex >= self.x and ex <= self.x + self.w  and ey >= self.y and ey <= self.y + self.h then
+    if ex >= self.x and ex < self.x + self.w  and ey >= self.y and ey < self.y + self.h then
         -- Check if button needs to be toggled off
         if self.toggle == true and self.pressed == true then
             self.pressed = false
@@ -226,7 +234,7 @@ end
 M.ProgressBar = {}
 M.ProgressBar.__index = M.ProgressBar
 
-function M.ProgressBar:new(minVal, maxVal, val, x, y, w, h, vertical, inverted, style)
+function M.ProgressBar:new(minVal, maxVal, val, x, y, w, h, parent, vertical, inverted, style)
     if vertical == nil then vertical = false end
     if inverted == nil then inverted = false end
     if style == nil then style = M.Style:new() end
@@ -241,6 +249,7 @@ function M.ProgressBar:new(minVal, maxVal, val, x, y, w, h, vertical, inverted, 
     progbar.y = y
     progbar.w = w
     progbar.h = h
+    progbar.parent = parent
     progbar.vertical = vertical
     progbar.inverted = inverted
     progbar.style = style
@@ -263,8 +272,11 @@ function M.ProgressBar:draw()
     local numPartlyFilled = 1
     if numFilled == math.floor(numFilled) then numPartlyFilled = 0 end
     
-    -- Get colors
+    -- Get colors and position
     local fg, bg = self.style:getColors(false, false)
+    local x, y = self.x, self.y
+
+    if self.parent then x, y = self.parent:convLocalToGlobal(x, y) end
 
     -- Iterate over all pixels
     for j = 1, self.h do
@@ -279,7 +291,7 @@ function M.ProgressBar:draw()
             end
 
             -- Set cursor pos to current pixel
-            term.setCursorPos(self.x + cx, self.y + cy)
+            term.setCursorPos(x + cx, y + cy)
 
             local pos = i
             if self.vertical then pos = ((self.h + 1) - j) end
@@ -328,43 +340,68 @@ end
 M.Group = {}
 M.Group.__index = M.Group
 
-function M.Group:new(x, y, elements)
+function M.Group:new(x, y, parent, elements)
 	local group = {}
 	setmetatable(group, M.Group)
-	
+
 	if elements == nil then elements = {} end
-	
+
 	group.x = x
 	group.y = y
+    group.parent = parent
 	group.elements = elements
-	
+
 	group.visible = true
-	
+
 	return group
+end
+
+-- Function to convert from local to global coordinate space
+function M.Group:convLocalToGlobal(x, y)
+    x = x + self.x - 1
+    y = y + self.y - 1
+
+    return x, y
+end
+
+-- Function to convert from global to local coordinate space
+function M.Group:convGlobalToLocal(x, y)
+    x = x - self.x + 1
+    y = y - self.y + 1
+
+    return x, y
 end
 
 -- Function to draw the entire Group
 function M.Group:draw()
 	if self.visible == false then return end
 
-	for k, v in pairs(self.elements) do
-        local ox, oy = v.x, v.y
-
-        v.x = ox + self.x - 1
-        v.y = oy + self.y - 1
-
+	for _, v in pairs(self.elements) do
 		v:draw()
-
-        self.elements[k].x = ox
-        self.elements[k].y = oy
 	end
+end
+
+-- Function to pass the click event to all elemens
+function M.Group:clickEvent(ex, ey)
+    ex, ey = self:convGlobalToLocal(ex, ey)
+
+    local x, y = self.x, self.y
+    if self.parent then x, y = self.parent:convLocalToGlobal(x, y) end
+
+    if ex < self.x and ey < self.y then return end
+
+    for _, v in pairs(self.elements) do
+        -- Check if element has clickEvent function
+        if getmetatable(v).__index.clickEvent then v:clickEvent(ex, ey) end
+    end
 end
 
 -- Functon to add an element to the group
 function M.Group:add(element, id)
 	if id == nil or id == "" then return end  
 	if element == nil then return end
-	
+
+    element.parent = self
 	self.elements[id] = element
 end
 
@@ -420,7 +457,7 @@ end
 
 -- Function to draw the current page
 function M.PageHandler:draw()
-	local page = self:get(self.active)
+	local page = self:get()
 	page:draw()
 end
 
@@ -438,7 +475,7 @@ end
 
 -- Function to get a specific page
 function M.PageHandler:get(index)
-	if index == nil then return -1 end
+	if index == nil then index = self.active end
 	return self.pages[index]
 end
 
