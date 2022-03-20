@@ -23,7 +23,6 @@ local uilib = require("/lib/uilib")
 
 local modemSide = "top"
 local serverDomain = "essentia.dl"
-local probeRate = 60
 
 
 
@@ -40,7 +39,6 @@ local modules = {}
 local sModem
 local serverAddress
 local pages = uilib.PageHandler:new()
-local probeTimer = nil
 
 local mon = peripheral.find("monitor")
 local sidePanel = nil
@@ -155,7 +153,6 @@ function Module:flow()
         sleep(8.5)
 
         self:probe()
-        probeTimer = os.startTimer(probeRate)
     end
 
     sidePanel:update("Ready", "", nil, nil)
@@ -387,7 +384,6 @@ sidePanel.ui:draw()
 
 -- Probe all apects
 sidePanel:probeAll()
-probeTimer = os.startTimer(probeRate)
 
 -- Main loop
 while true do
@@ -398,12 +394,6 @@ while true do
         local x, y = ed[3], ed[4]
         sidePanel.ui:clickEvent(x, y)
         pages:get():clickEvent(x, y)
-
-    elseif e == "timer" then
-        if ed[2] == probeTimer then 
-            sidePanel:probeAll()
-            probeTimer = os.startTimer(probeRate)
-        end
     end
 
     pages:draw()
