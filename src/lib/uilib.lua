@@ -240,7 +240,7 @@ end
 -- Function to check if a click event occured on the button
 function M.Button:clickEvent(ex, ey)
     -- Check if button is visible and not disabled
-    if self.visible == flase or self.disabled == true then return end
+    if self.visible == false or self.disabled == true then return end
 
     -- Check if clicked coordinate is within button
     if ex >= self.x and ex < self.x + self.w  and ey >= self.y and ey < self.y + self.h then

@@ -364,6 +364,8 @@ end
 --  Main Program
 -- --------------------------------
 
+-- TODO: Fix last 4 elements on page not being clickable
+
 -- Prepare monitor, if existing
 if mon then
     mon.setTextScale(0.5)
