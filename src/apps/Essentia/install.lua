@@ -14,14 +14,13 @@ term.setCursorPos(1, 1)
 term.setTextColor(colors.yellow)
 print("Welcome to the setup of Essentia v1.0!")
 
-term.setTextColor(colors.white)
+term.setTextColor(colors.lightGray)
 print("Please enter the type of installation (display, server or controller):")
 
 local installType = nil
 while installType == nil do
-	term.setTextColor(colors.lightGray)
+	term.setTextColor(colors.white)
 	local input = read()
-	print()
 	
 	if input == "display" or input == "server" or input == "controller" then
 		installType = input
@@ -67,3 +66,4 @@ end
 
 term.setTextColor(colors.green)
 print("Installation success! Please configure the downloaded program manually")
+sleep(5)
