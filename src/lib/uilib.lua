@@ -108,6 +108,71 @@ end
 
 
 
+
+
+-- Class that holds properties for a panel
+
+M.Panel = {}
+M.Panel.__index = M.Panel
+
+function M.Panel:new(fill, x, y, w, h, parent, style)
+    local panel = {}
+    setmetatable(panel, M.Panel)
+
+    if style == nil then style = M.Style:new() end
+
+    panel.fill = fill
+    panel.x = x
+    panel.y = y
+    panel.w = w
+    panel.h = h
+    panel.parent = parent
+    panel.style = style
+
+    panel.visible = true
+
+    return panel
+end
+
+-- Draws the Panel
+function M.Panel:draw()
+    if self.visible == false then return end
+
+    local fg, bg = self.style:getColors(false, false)
+    local x, y = self.x, self.y
+
+    if self.parent then x, y = self.parent:convLocalToGlobal(x, y) end
+
+    -- Iterate over the area of the panel
+    for j = 1, self.h do
+        for i = 1, self.w do
+            term.setCursorPos(x + (i - 1), y + (j - 1))
+            term.setTextColor(fg)
+            term.setBackgroundColor(bg)
+
+            term.write(self.fill)
+
+            term.setTextColor(colors.white)
+            term.setBackgroundColor(colors.black)
+        end
+    end
+end
+
+-- Function to show the panel
+function M.Panel:show()
+    self.visible = true
+end
+
+-- Function to hide the panel
+function M.Panel:hide()
+    self.visible = false
+end
+
+
+
+
+
+
 -- Class to hold properties of a button
 M.Button = {}
 M.Button.__index = M.Button
@@ -340,7 +405,7 @@ end
 M.Group = {}
 M.Group.__index = M.Group
 
-function M.Group:new(x, y, parent, elements)
+function M.Group:new(x, y, parent, background, elements)
 	local group = {}
 	setmetatable(group, M.Group)
 
@@ -349,6 +414,7 @@ function M.Group:new(x, y, parent, elements)
 	group.x = x
 	group.y = y
     group.parent = parent
+    group.background = background
 	group.elements = elements
 
 	group.visible = true
@@ -375,9 +441,13 @@ end
 -- Function to draw the entire Group
 function M.Group:draw()
 	if self.visible == false then return end
+    if self.background then self.elements[self.background]:draw() end
 
-	for _, v in pairs(self.elements) do
-		v:draw()
+	for k, v in pairs(self.elements) do
+        repeat
+            if k == self.background then break end
+		    v:draw()
+        until true
 	end
 end
 
@@ -450,7 +520,7 @@ function M.PageHandler:new(pages, active)
 	if active == nil then active = 1 end
 	
     pageHandler.pages = pages
-	self.active = active
+	pageHandler.active = active
 
     return pageHandler
 end
@@ -481,23 +551,23 @@ end
 
 -- Function to move to next page
 function M.PageHandler:next()
-    self:get(self.active).hide()
-
 	if self.active + 1 > #self.pages then return end
+
+    self:get():hide()
 	self.active = self.active + 1
 
-    self:get(self.active).show()
+    self:get():show()
 	self:draw()
 end
 
 -- Function to move to previous page
 function M.PageHandler:prev()
-    self:get(self.active).hide()
-
 	if self.active - 1 < 1 then return end
+    
+    self:get():hide()
 	self.active = self.active - 1
 
-    self:get(self.active).show()
+    self:get():show()
 	self:draw()
 end
 
