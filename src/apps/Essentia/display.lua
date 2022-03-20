@@ -77,7 +77,7 @@ function Module:new(x, y, aspect, title, color)
 
     mod.selAmount = 0
 
-    mod.ui = uilib.Group:new(x, y, "bgPanel")
+    mod.ui = uilib.Group:new(x, y, nil, "bgPanel")
 	mod.ui:add(uilib.Panel:new(" ", 1, 1, 17, 12, nil, uilib.Style:new(colors.white, colors.black)), "bgPanel")
 
     mod.ui:add(uilib.Label:new(title, 2, 2, nil, uilib.Style:new(color, colors.black)), "titleLabel")
