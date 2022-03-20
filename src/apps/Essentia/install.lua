@@ -40,29 +40,29 @@ print("Creating folder for third party libraries")
 shell.run("mkdir", "lib/ThridParty")
 
 print("Downloading ecnet")
-shell.run("wget", "https://github.com/BitTim/CC-Scripts/src/lib/ThirdParty/ecnet.lua", "lib/ThirdParty/ecnet.lua")
+shell.run("wget", "https://raw.githubusercontent.com/BitTim/CC-Scripts/master/src/lib/ThirdParty/ecnet.lua", "lib/ThirdParty/ecnet.lua")
 
 print("Downloading comlib")
-shell.run("wget", "https://github.com/BitTim/CC-Scripts/src/lib/comlib.lua", "lib/comlib.lua")
+shell.run("wget", "https://raw.githubusercontent.com/BitTim/CC-Scripts/master/src/lib/comlib.lua", "lib/comlib.lua")
 
 print("Downloading dnslib")
-shell.run("wget", "https://github.com/BitTim/CC-Scripts/src/lib/dnslib.lua", "lib/dnslib.lua")
+shell.run("wget", "https://raw.githubusercontent.com/BitTim/CC-Scripts/master/src/lib/dnslib.lua", "lib/dnslib.lua")
 
 print("Downloading loglib")
-shell.run("wget", "https://github.com/BitTim/CC-Scripts/src/lib/loglib.lua", "lib/loglib.lua")
+shell.run("wget", "https://raw.githubusercontent.com/BitTim/CC-Scripts/master/src/lib/loglib.lua", "lib/loglib.lua")
 
 print("Downloading uilib")
-shell.run("wget", "https://github.com/BitTim/CC-Scripts/src/lib/uilib.lua", "lib/uilib.lua")
+shell.run("wget", "https://raw.githubusercontent.com/BitTim/CC-Scripts/master/src/lib/uilib.lua", "lib/uilib.lua")
 
 if installType == "display" then
 	print("Downloading display")
-	shell.run("wget", "https://github.com/BitTim/CC-Scripts/src/apps/Essentia/display.lua", "startup.lua")
+	shell.run("wget", "https://raw.githubusercontent.com/BitTim/CC-Scripts/master/src/apps/Essentia/display.lua", "startup.lua")
 elseif installType == "server" then
 	print("Downloading server")
-	shell.run("wget", "https://github.com/BitTim/CC-Scripts/src/apps/Essentia/server.lua", "startup.lua")
+	shell.run("wget", "https://raw.githubusercontent.com/BitTim/CC-Scripts/master/src/apps/Essentia/server.lua", "startup.lua")
 elseif installType == "controller" then
 	print("Downloading controller")
-	shell.run("wget", "https://github.com/BitTim/CC-Scripts/src/apps/Essentia/controller.lua", "startup.lua")
+	shell.run("wget", "https://raw.githubusercontent.com/BitTim/CC-Scripts/master/src/apps/Essentia/controller.lua", "startup.lua")
 end
 
 term.setTextColor(colors.green)
