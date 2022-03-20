@@ -77,34 +77,21 @@ function Module:new(x, y, aspect, title, color)
 
     mod.selAmount = 0
 
-    mod.ui = uilib.Group:new(x, y)
+    mod.ui = uilib.Group:new(x, y, "bgPanel")
+	mod.ui:add(uilib.Panel:new(" ", 1, 1, w, h, nil, uilib.Style:new(colors.white, colors.black)), "bgPanel")
 
-    local titleLabel = uilib.Label:new(title, 2, 2, nil, uilib.Style:new(color, colors.black))
-    mod.ui:add(titleLabel, "titleLabel")
+    mod.ui:add(uilib.Label:new(title, 2, 2, nil, uilib.Style:new(color, colors.black)), "titleLabel")
+    mod.ui:add(uilib.Label:new("x" .. mod.amount, 3, 3, nil, uilib.Style:new(colors.white, colors.black)), "amountLabel")
+    mod.ui:add(uilib.ProgressBar:new(0, 250, mod.amount, 2, 5, 15, 1, nil, false, false, uilib.Style:new(color)), "progbar")
 
-    local amountLabel = uilib.Label:new("x" .. mod.amount, 3, 3, nil, uilib.Style:new(colors.white, colors.black))
-    mod.ui:add(amountLabel, "amountLabel")
+    mod.ui:add(uilib.Button:new(mod.selAmount, 5, 7, 9, 3, nil, Module.flow, {mod}, false), "flowBtn")
+    mod.ui:add(uilib.Button:new("<", 2, 7, 3, 3, nil, Module.less, {mod}, false), "lessBtn")
+    mod.ui:add(uilib.Button:new(">", 14, 7, 3, 3, nil, Module.more, {mod}, false), "moreBtn")
 
-    local progbar = uilib.ProgressBar:new(0, 250, mod.amount, 2, 5, 15, 1, nil, false, false, uilib.Style:new(color))
-    mod.ui:add(progbar, "progbar")
-
-    local flowBtn = uilib.Button:new(mod.selAmount, 5, 7, 9, 3, nil, Module.flow, {mod}, false)
-    mod.ui:add(flowBtn, "flowBtn")
-    
-    local lessBtn = uilib.Button:new("<", 2, 7, 3, 3, nil, Module.less, {mod}, false)
-    mod.ui:add(lessBtn, "lessBtn")
-
-    local moreBtn = uilib.Button:new(">", 14, 7, 3, 3, nil, Module.more, {mod}, false)
-    mod.ui:add(moreBtn, "moreBtn")
-
-    local probeBtn = uilib.Button:new("Probe", 2, 11, 7, 1, nil, Module.probe, {mod}, false)
-    mod.ui:add(probeBtn, "probeBtn")
-
-    local resetBtn = uilib.Button:new("Reset", 10, 11, 7, 1, nil, Module.reset, {mod}, false)
-    mod.ui:add(resetBtn, "resetBtn")
+    mod.ui:add(uilib.Button:new("Probe", 2, 11, 7, 1, nil, Module.probe, {mod}, false), "probeBtn")
+    mod.ui:add(uilib.Button:new("Reset", 10, 11, 7, 1, nil, Module.reset, {mod}, false), "resetBtn")
 
     mod:update(nil, nil)
-
     return mod
 end
 
@@ -155,10 +142,7 @@ function Module:probe()
     local ret = comlib.sendRequest(sModem, serverAddress, "PROBE", {aspect = self.aspect})
     if ret ~= -1 and ret.status == "OK" then self:update(ret.contents.amount, nil) end
 
-    term.clear()
     pages:draw()
-    sidePanel.ui:draw()
-
     sidePanel:update("Ready", "", nil, nil)
 end
 
@@ -314,6 +298,65 @@ local function createModule(page, x, y, aspect, title, color)
     return mod
 end
 
+local function initModules()
+	-- Page 1
+	-- Row 1
+	table.insert(modules, createModule(1, 1, 1, "motus", "Motus", colors.white))
+	table.insert(modules, createModule(1, 18, 1, "humanus", "Humanus", colors.lightGray))
+	table.insert(modules, createModule(1, 35, 1, "cognitio", "Cognitio", colors.pink))
+	table.insert(modules, createModule(1, 52, 1, "auram", "Auram", colors.pink))
+	table.insert(modules, createModule(1, 69, 1, "tempus", "Tempus", colors.purple))
+
+	-- Row 2
+	table.insert(modules, createModule(1, 1, 13, "alienis", "Alienis", colors.purple))
+	table.insert(modules, createModule(1, 18, 13, "vitium", "Vitium", colors.pruple))
+	table.insert(modules, createModule(1, 35, 13, "praecantatio", "Praecantatio", colors.magenta))
+	table.insert(modules, createModule(1, 52, 13, "vinculum", "Vinculum", colors.brown))
+	table.insert(modules, createModule(1, 69, 13, "aversio", "Aversio", colors.red))
+
+	-- Page 2
+	-- Row 1
+	table.insert(modules, createModule(2, 1, 1, "mortuus", "Mortuus", colors.red))
+	table.insert(modules, createModule(2, 18, 1, "victus", "Victus", colors.red))
+	table.insert(modules, createModule(2, 35, 1, "ignis", "Ignis", colors.orange))
+	table.insert(modules, createModule(2, 52, 1, "bestia", "Bestia", colors.brown))
+	table.insert(modules, createModule(2, 69, 1, "desiderium", "Desiderium", colors.yellow))
+
+	-- Row 2
+	table.insert(modules, createModule(2, 1, 13, "aer", "Aer", colors.yellow))
+	table.insert(modules, createModule(2, 18, 13, "lux", "Lux", colors.white))
+	table.insert(modules, createModule(2, 35, 13, "sensus", "Sensus", colors.lime))
+	table.insert(modules, createModule(2, 52, 13, "terra", "Terra", colors.green))
+	table.insert(modules, createModule(2, 69, 13, "herba", "Herba", colors.green))
+	
+	-- Page 3
+	-- Row 1
+	table.insert(modules, createModule(3, 1, 1, "examinis", "Examinis", colors.darkGray))
+	table.insert(modules, createModule(3, 18, 1, "permutatio", "Permutatio", colors.cyan))
+	table.insert(modules, createModule(3, 35, 1, "fabrico", "Fabrico", colors.lightGray))
+	table.insert(modules, createModule(3, 52, 1, "gelum", "Gelum", colors.white))
+	table.insert(modules, createModule(3, 69, 1, "potentia", "Potentia", colors.lightBlue))
+
+	-- Row 2
+	table.insert(modules, createModule(3, 1, 13, "vitreus", "Vitreus", colors.lightBlue))
+	table.insert(modules, createModule(3, 18, 13, "aqua", "Aqua", colors.lightBlue))
+	table.insert(modules, createModule(3, 35, 13, "preamunio", "Preamunio", colors.cyan))
+	table.insert(modules, createModule(3, 52, 13, "alkimia", "Alkimia", colors.cyan))
+	table.insert(modules, createModule(3, 69, 13, "instrumentum", "Instrumentum", colors.blue))
+
+	-- Page 4
+	-- Row 1
+	table.insert(modules, createModule(4, 1, 1, "motus", "Motus", colors.lightGray))
+	table.insert(modules, createModule(4, 18, 1, "spiritus", "Spiritus", colors.white))
+	table.insert(modules, createModule(4, 35, 1, "ordo", "Ordo", colors.lightGray))
+	table.insert(modules, createModule(4, 52, 1, "metallum", "Metallum", colors.lightGray))
+	table.insert(modules, createModule(4, 69, 1, "machina", "Machina", colors.lightGray))
+
+	-- Row 2
+	table.insert(modules, createModule(4, 1, 13, "vacuos", "Vacuos", colors.gray))
+	table.insert(modules, createModule(4, 18, 13, "perditio", "Perditio", colors.gray))
+	table.insert(modules, createModule(4, 35, 13, "tenebrae", "Tenebrae", colors.gray))
+end
 
 
 
@@ -324,51 +367,29 @@ end
 --  Main Program
 -- --------------------------------
 
+-- Prepare monitor, if existing
 if mon then
     mon.setTextScale(0.5)
     term.redirect(mon)
 end
 
-sModem = comlib.open(modemSide)                           -- Create Secure Modem
-dnslib.init(sModem)                                       -- Initialize DNSLib
-serverAddress = dnslib.lookup(serverDomain)               -- Look up server address
+sModem = comlib.open(modemSide)                         -- Create Secure Modem
+dnslib.init(sModem)                                     -- Initialize DNSLib
+serverAddress = dnslib.lookup(serverDomain)             -- Look up server address
 
-
-table.insert(modules, createModule(1, 1, 1, "sensus", "Sensus", colors.lightBlue))
-table.insert(modules, createModule(1, 18, 1, "preamunio", "Preamunio", colors.cyan))
-table.insert(modules, createModule(1, 35, 1, "victus", "Victus", colors.red))
-table.insert(modules, createModule(1, 52, 1, "a", "A", colors.yellow))
-table.insert(modules, createModule(1, 69, 1, "b", "B", colors.orange))
-
-table.insert(modules, createModule(1, 1, 13, "c", "C", colors.blue))
-table.insert(modules, createModule(1, 18, 13, "d", "D", colors.pruple))
-table.insert(modules, createModule(1, 35, 13, "e", "E", colors.gray))
-table.insert(modules, createModule(1, 52, 13, "f", "F", colors.pink))
-table.insert(modules, createModule(1, 69, 13, "g", "G", colors.lime))
-
-table.insert(modules, createModule(2, 1, 1, "h", "H", colors.green))
-table.insert(modules, createModule(2, 18, 1, "i", "I", colors.brown))
-table.insert(modules, createModule(2, 35, 1, "j", "J", colors.yellow))
-table.insert(modules, createModule(2, 52, 1, "k", "K", colors.red))
-table.insert(modules, createModule(2, 69, 1, "l", "L", colors.purple))
-
-table.insert(modules, createModule(2, 1, 13, "m", "M", colors.lightBlue))
-table.insert(modules, createModule(2, 18, 13, "n", "N", colors.green))
-table.insert(modules, createModule(2, 35, 13, "o", "O", colors.blue))
-table.insert(modules, createModule(2, 52, 13, "p", "P", colors.white))
-table.insert(modules, createModule(2, 69, 13, "q", "Q", colors.pink))
-
--- TODO: Fix clearing when page changed
-
+-- Initialize UI
+initModules()
 sidePanel = SidePanel:new(87, 1)
 
 term.clear()
 pages:draw()
 sidePanel.ui:draw()
 
+-- Probe all apects
 sidePanel:probeAll()
 probeTimer = os.startTimer(probeRate)
 
+-- Main loop
 while true do
     local ed = table.pack(os.pullEvent())
     local e = ed[1]
