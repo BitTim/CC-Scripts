@@ -104,7 +104,7 @@ function Module:update(amount, selAmount)
     self.ui:get("progbar").val = amount
     self.ui:get("flowBtn").text = selAmount
 
-	local lessHandled, moreHandled, flowHandled = true
+	local lessHandled, moreHandled, flowHandled = false, false, false
 	
 	if selAmount >= self.amount then
 		flowHandled, moreHandled = true, true
@@ -318,7 +318,7 @@ local function initModules()
 
 	-- Row 2
 	table.insert(modules, createModule(1, 1, 13, "alienis", "Alienis", colors.purple))
-	table.insert(modules, createModule(1, 18, 13, "vitium", "Vitium", colors.pruple))
+	table.insert(modules, createModule(1, 18, 13, "vitium", "Vitium", colors.purple))
 	table.insert(modules, createModule(1, 35, 13, "praecantatio", "Praecantatio", colors.magenta))
 	table.insert(modules, createModule(1, 52, 13, "vinculum", "Vinculum", colors.brown))
 	table.insert(modules, createModule(1, 69, 13, "aversio", "Aversio", colors.red))
@@ -340,7 +340,7 @@ local function initModules()
 	
 	-- Page 3
 	-- Row 1
-	table.insert(modules, createModule(3, 1, 1, "examinis", "Examinis", colors.darkGray))
+	table.insert(modules, createModule(3, 1, 1, "examinis", "Examinis", colors.gray))
 	table.insert(modules, createModule(3, 18, 1, "permutatio", "Permutatio", colors.cyan))
 	table.insert(modules, createModule(3, 35, 1, "fabrico", "Fabrico", colors.lightGray))
 	table.insert(modules, createModule(3, 52, 1, "gelum", "Gelum", colors.white))
