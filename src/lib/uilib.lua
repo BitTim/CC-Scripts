@@ -453,12 +453,11 @@ end
 
 -- Function to pass the click event to all elemens
 function M.Group:clickEvent(ex, ey)
-    ex, ey = self:convGlobalToLocal(ex, ey)
-
     local x, y = self.x, self.y
-    if self.parent then x, y = self.parent:convLocalToGlobal(x, y) end
+    if self.parent then x, y = self.parent:convGlobalToLocal(x, y) end
 
-    if ex < self.x and ey < self.y then return end
+    if ex < x and ey < y then return end
+    ex, ey = self:convGlobalToLocal(ex, ey)
 
     for _, v in pairs(self.elements) do
         -- Check if element has clickEvent function
