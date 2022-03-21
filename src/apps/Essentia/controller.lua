@@ -135,7 +135,7 @@ end
 -- --------------------------------
 
 sModem = comlib.open(modemSide) -- Create Secure Modem
-loglib.init(title, version) -- Initialize LogLib
+loglib.init(title, version, 0.5) -- Initialize LogLib
 loglib.log("Address", comlib.getAddress()) -- Print Address
 
 wrapNBTPeripherals()

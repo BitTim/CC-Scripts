@@ -63,8 +63,10 @@ local function flow(s, p)
         end
     end
 
-    loglib.log("Flow", "Sending response with status FAIL")
-    if handled == false then comlib.sendResponse(sModem, s, p.head, "FAIL", nil) end
+    if handled == false then 
+        loglib.log("Flow", "Sending response with status FAIL")
+        comlib.sendResponse(sModem, s, p.head, "FAIL", nil)
+    end
 end
 
 local function probe(s, p)
@@ -81,8 +83,10 @@ local function probe(s, p)
         end
     end
 
-    loglib.log("Probe", "Sending response with status FAIL")
-    if handled == false then comlib.sendResponse(sModem, s, p.head, "FAIL", nil) end
+    if handled == false then 
+        loglib.log("Probe", "Sending response with status FAIL")
+        comlib.sendResponse(sModem, s, p.head, "FAIL", nil)
+    end
 end
 
 

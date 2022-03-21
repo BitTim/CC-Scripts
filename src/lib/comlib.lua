@@ -42,7 +42,7 @@ end
 -- Send a request and wait for response
 function M.sendRequest(sModem, address, header, contents, timeout)
     -- Set defult values for not specified variables
-    if timeout == nil then timeout = 3 end
+    if timeout == nil then timeout = 10 end
     if sModem == nil then return end
 
     -- Connect to Server
@@ -93,7 +93,7 @@ end
 -- Broadcast a request to multiple receivers
 function M.broadcast(sModem, addresses, header, contents, timeout)
     -- Set defult values for not specified variables
-    if timeout == nil then timeout = 3 end
+    if timeout == nil then timeout = 30 end
     if sModem == nil then return end
 
     local responses = {}
