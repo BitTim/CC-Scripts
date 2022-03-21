@@ -104,19 +104,29 @@ function Module:update(amount, selAmount)
     self.ui:get("progbar").val = amount
     self.ui:get("flowBtn").text = selAmount
 
-    if selAmount > self.amount then
-        self.ui:get("flowBtn").disabled = true
-        self.ui:get("lessBtn").disabled = false
-        self.ui:get("moreBtn").disabled = true
-    elseif selAmount < 1 then
-        self.ui:get("flowBtn").disabled = true
-        self.ui:get("lessBtn").disabled = true
-        self.ui:get("moreBtn").disabled = false
-    else
-        self.ui:get("flowBtn").disabled = false
-        self.ui:get("lessBtn").disabled = false
-        self.ui:get("moreBtn").disabled = false
-    end
+	local lessHandled, moreHandled, flowHandled = true
+	
+	if selAmount >= self.amount then
+		flowHandled, moreHandled = true, true
+		self.ui:get("flowBtn").disabled = true
+		self.ui:get("moreBtn").disabled = true
+		
+		self.ui:get("lessBtn").disabled = false
+	end
+	
+	if selAmount < 1 then
+		flowHandled, lessHandled = true, true
+		self.ui:get("flowBtn").disabled = true
+		self.ui:get("lessBtn").disabled = true
+		
+		if moreHandled == false then
+			self.ui:get("moreBtn").disabled = false
+		end
+	end
+	
+    if flowHandled == false then self.ui:get("flowBtn").disabled = false end
+    if lessHandled == false then self.ui:get("lessBtn").disabled = false end
+    if moreHandled == false then self.ui:get("moreBtn").disabled = false end
 end
 
 function Module:less()
@@ -145,6 +155,8 @@ function Module:probe()
 end
 
 function Module:flow()
+	if self.amount < 5 then return end
+	
     for i = 5, self.selAmount, 5 do
         sidePanel:update("Flowing", nil, nil, nil)
         sidePanel:update(nil, self.title, self.color, nil)
