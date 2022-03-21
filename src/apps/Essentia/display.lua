@@ -310,7 +310,7 @@ end
 local function initModules()
 	-- Page 1
 	-- Row 1
-	table.insert(modules, createModule(1, 1, 1, "motus", "Motus", colors.white))
+	table.insert(modules, createModule(1, 1, 1, "volatus", "Volatus", colors.white))
 	table.insert(modules, createModule(1, 18, 1, "humanus", "Humanus", colors.lightGray))
 	table.insert(modules, createModule(1, 35, 1, "cognitio", "Cognitio", colors.pink))
 	table.insert(modules, createModule(1, 52, 1, "auram", "Auram", colors.pink))
