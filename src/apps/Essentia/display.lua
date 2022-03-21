@@ -107,10 +107,15 @@ function Module:update(amount, selAmount)
 	local lessHandled, moreHandled, flowHandled = false, false, false
 	
 	if selAmount >= self.amount then
-		flowHandled, moreHandled = true, true
-		self.ui:get("flowBtn").disabled = true
+		moreHandled = true
+        if selAmount > self.amount then
+            flowHandled = true
+		    self.ui:get("flowBtn").disabled = true
+        else
+            self.ui:get("flowBtn").disabled = false
+        end
+
 		self.ui:get("moreBtn").disabled = true
-		
 		self.ui:get("lessBtn").disabled = false
 	end
 	
