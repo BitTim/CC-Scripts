@@ -80,7 +80,10 @@ function Module:new(x, y, aspect, title, color)
 
     mod.ui:add(uilib.Label:new(title, 2, 2, nil, uilib.Style:new(color, colors.black)), "titleLabel")
     mod.ui:add(uilib.Label:new("x" .. mod.amount, 3, 3, nil, uilib.Style:new(colors.white, colors.black)), "amountLabel")
-    mod.ui:add(uilib.ProgressBar:new(0, 250, mod.amount, 2, 5, 15, 1, nil, false, false, uilib.Style:new(color)), "progbar")
+	
+	local progbarCol = color
+	if progbarCol == colors.black or progbarCol == colors.gray then progbarCol = colors.lightGray end
+    mod.ui:add(uilib.ProgressBar:new(0, 250, mod.amount, 2, 5, 15, 1, nil, false, false, uilib.Style:new(progbarCol)), "progbar")
 
     mod.ui:add(uilib.Button:new(mod.selAmount, 5, 7, 9, 3, nil, Module.flow, {mod}, false), "flowBtn")
     mod.ui:add(uilib.Button:new("<", 2, 7, 3, 3, nil, Module.less, {mod}, false), "lessBtn")
