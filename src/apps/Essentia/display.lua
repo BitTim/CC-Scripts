@@ -370,6 +370,8 @@ local function initModules()
 	table.insert(modules, createModule(4, 1, 13, "vacuos", "Vacuos", colors.gray))
 	table.insert(modules, createModule(4, 18, 13, "perditio", "Perditio", colors.gray))
 	table.insert(modules, createModule(4, 35, 13, "tenebrae", "Tenebrae", colors.gray))
+    pages:get(4):add(uilib.Panel:new(" ", 52, 13, 17, 12, nil, uilib.Style:new(colors.black, colors.black)), "placeholder1")
+    pages:get(4):add(uilib.Panel:new(" ", 69, 13, 17, 12, nil, uilib.Style:new(colors.black, colors.black)), "placeholder2")
 end
 
 
