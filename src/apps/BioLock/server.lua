@@ -1,8 +1,8 @@
 -- ================================
 --  server.lua
 -- --------------------------------
---  Boilerplate code for
---  server scripts
+--  Serverv for multi factor
+--  authentication
 -- --------------------------------
 --  (C) Copyright 2022,
 --  Tim Anhalt (BitTim)
