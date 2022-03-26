@@ -2,10 +2,14 @@
 -- http://en.wikipedia.org/wiki/Universally_unique_identifier
 -- Format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx , where x is any hexadecimal digit and y is one of 8, 9, A, or B
 -- Partially based on: http://developer.coronalabs.com/code/uuidguid-string-generator-coronalua by FrankS
+-- Included in a module by BitTim
+
+-- Create module
+local M = {}
 
 --  Generate, Generates UUID 
 -- @returns string containing the uuid
-function Generate()
+function M.Generate()
 	local chars = {"0","1","2","3","4","5","6","7","8","9","A","B","C","D","E","F"}
 	local uuid = {[9]="-",[14]="-",[15]="4",[19]="-",[24]="-"}
 	uuid[20] = chars[math.random (9,12)]
@@ -22,7 +26,7 @@ end
 -- @uuid = string containing the uuid.
 -- @notrim (optional) = if set to false, turns off trimming of leading and trailing whitespaces.
 -- @returns bool, true on validation, false if not valid.
-function Validate(uuid, notrim)
+function M.Validate(uuid, notrim)
 	if not notrim == false or notrim == nil then
 		uuid = uuid:gsub("^%s*(.-)%s*$", "%1")
 	end
@@ -47,9 +51,12 @@ end
 -- @id1,id2 = uuid's to compare
 -- @notrim (optional) = if set to false, turns off trimming of leading and trailing whitespaces.
 -- @returns bool, true if uuid's match else false.
-function Compare(id1, id2, notrim)
+function M.Compare(id1, id2, notrim)
 	if Validate(id1, notrim) and Validate(id2, notrim) then
 		if id1 == id2 then return true end
 	end
 	return false
 end
+
+-- Return module
+return M
