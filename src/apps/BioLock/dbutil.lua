@@ -1,0 +1,10 @@
+-- ================================
+--  dbutil.lua
+-- --------------------------------
+--  Utility script for managing
+--  databases required for
+--  authentication
+-- --------------------------------
+--  (C) Copyright 2022,
+--  Tim Anhalt (BitTim)
+-- ================================

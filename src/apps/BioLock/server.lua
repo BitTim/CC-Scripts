@@ -14,6 +14,7 @@
 
 local comlib = require("/lib/comlib")
 local loglib = require("/lib/loglib")
+local authlib = require("/lib/authlib")
 
 -- --------------------------------
 --  Configurable Properties
@@ -25,7 +26,7 @@ local modemSide = "top"
 --  Constants
 -- --------------------------------
 
-local title = "Server"
+local title = "Auth Server"
 local version = "v1.0"
 
 -- --------------------------------
@@ -33,6 +34,41 @@ local version = "v1.0"
 -- --------------------------------
 
 local sModem = nil
+local udb = nil
+local tdb = nil
+
+
+
+
+
+
+
+
+-- --------------------------------
+--  Local Functions
+-- --------------------------------
+
+local function initDBs()
+    -- Load DB Files
+    local userDBFile = fs.open("/.userDB", "r")
+    local tmpUserDB = textutils.unserialize(userDBFile.readAll())
+    userDBFile.close()
+
+    local termDBFile = fs.open("/.termDB", "r")
+    local tmpTermDB = textutils.unserialize(termDBFile.readAll())
+    termDBFile.close()
+
+    -- Create objects
+    for _, v in pairs(tmpUserDB) do
+        local user = authlib.User:new(v.uuid, v.eName, v.pinHash)
+        table.insert(udb, user)
+    end
+
+    for _, v in pairs(tmpTermDB) do
+        local term = authlib.Terminal:new(v.uuid, v.name, v.users)
+        table.insert(tdb, term)
+    end
+end
 
 
 
@@ -64,6 +100,8 @@ sModem = comlib.open(modemSide)                                 -- Create Secure
 loglib.init(title, version, 0.5)                                -- Initialize LogLib
 loglib.log("Address", comlib.getAddress())                      -- Print Address
 
+initDBs()
+
 --Main Loop
 while true do
     --Receive Packet
@@ -72,7 +110,7 @@ while true do
     local p = textutils.unserialize(msg)
 
     loglib.log("Main", "Received packet with header: " .. p.head)
-    
+
     --Check Packet header
     if p.head == "" then
         req(s, p)
