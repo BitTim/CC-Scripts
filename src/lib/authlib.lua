@@ -38,14 +38,14 @@ function M.AuthCode:new(digits, resetTime)
     if resetTime == nil or resetTime < 1 then resetTime = 30 end
 
     local authCode = {}
-    setmetatable(authCode, AuthCode)
+    setmetatable(authCode, M.AuthCode)
 
     authCode.digits = digits
     authCode.resetTime = resetTime
 
     authCode.aCode = nil
     authCode.pCode = nil
-    authCode.time = nil
+    authCode.time = 0
 
     authCode.timer = nil
     return authCode
@@ -72,7 +72,7 @@ function M.AuthCode:gen()
 end
 
 -- Update status of active code
-function M.AuthCode.update()
+function M.AuthCode:update()
     self.time = self.time - 1
     if self.time < 1 then self:gen() end
 
@@ -97,7 +97,7 @@ function M.User:new(uuid, eName, pinHash, authCodeDigits, authCodeResetTime)
     user.pinHash = pinHash
     user.authCode = M.AuthCode:new(authCodeDigits, authCodeResetTime)
 
-    user.authCode:gen()
+    user.authCode:update()
     return user
 end
 

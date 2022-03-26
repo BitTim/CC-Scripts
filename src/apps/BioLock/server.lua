@@ -100,11 +100,10 @@ local function timerHandler()
     while true do
         local _, timer = os.pullEvent("timer")
 
-        loglib.log("Main", "Updating timer")
-
         for _, v in pairs(udb) do
             if v.authCode.timer == timer then
-                v.authCode.update()
+                loglib.log(v.eName, v.authCode.aCode .. ", " .. v.authCode.time .. "s")
+                v.authCode:update()
                 break
             end
         end
@@ -113,17 +112,20 @@ end
 
 local function receiveHandler()
     while true do
-        --Receive Packet
-        loglib.log("Main", "Receiving packet...")
-        local s, msg = sModem.receive()
-        local p = textutils.unserialize(msg)
+        repeat
+            --Receive Packet
+            local s, msg = sModem.receive(nil, 0)
+            if s == nil or msg == nil then break end
 
-        loglib.log("Main", "Received packet with header: " .. p.head)
+            local p = textutils.unserialize(msg)
 
-        --Check Packet header
-        if p.head == "TEST" then
-            req(s, p)
-        end
+            loglib.log("Main", "Received packet with header: " .. p.head)
+
+            --Check Packet header
+            if p.head == "TEST" then
+                req(s, p)
+            end
+        until true
     end
 end
 
