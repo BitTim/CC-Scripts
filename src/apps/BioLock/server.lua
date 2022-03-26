@@ -34,8 +34,8 @@ local version = "v1.0"
 -- --------------------------------
 
 local sModem = nil
-local udb = nil
-local tdb = nil
+local udb = {}
+local tdb = {}
 
 
 

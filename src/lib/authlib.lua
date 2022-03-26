@@ -97,6 +97,7 @@ function M.User:new(uuid, eName, pinHash, authCodeDigits, authCodeResetTime)
     user.pinHash = pinHash
     user.authCode = M.AuthCode:new(authCodeDigits, authCodeResetTime)
 
+    user.authCode:gen()
     return user
 end
 
