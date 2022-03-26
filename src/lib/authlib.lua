@@ -54,8 +54,8 @@ end
 -- Generate new active code
 function M.AuthCode:gen()
     -- Init Randomizers
-    math.randomseed(os.time())
-    _ = math.random(); _ = math.random();_ = math.random()
+    math.randomseed(os.time() * 1000)
+    _ = math.random(); _ = math.random(); _ = math.random()
 
     -- Assign previous code
     self.pCode = self.aCode
