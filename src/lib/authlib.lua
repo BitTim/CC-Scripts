@@ -47,6 +47,7 @@ function M.AuthCode:new(digits, resetTime)
     authCode.pCode = nil
     authCode.time = nil
 
+    authCode.timer = nil
     return authCode
 end
 
@@ -75,7 +76,7 @@ function M.AuthCode.update()
     self.time = self.time - 1
     if self.time < 1 then self:gen() end
 
-    return os.startTimer(1)
+    self.timer = os.startTimer(1)
 end
 
 

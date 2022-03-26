@@ -82,7 +82,49 @@ end
 -- --------------------------------
 
 local function req(s, p)
+    comlib.sendResponse(sModem, s, "TEST", "OK", nil)
+end
 
+
+
+
+
+
+
+
+-- --------------------------------
+--  Parallel Handlers
+-- --------------------------------
+
+local function timerHandler()
+    while true do
+        local _, timer = os.pullEvent("timer")
+
+        loglib.log("Main", "Updating timer")
+
+        for _, v in pairs(udb) do
+            if v.authCode.timer == timer then
+                v.authCode.update()
+                break
+            end
+        end
+    end
+end
+
+local function receiveHandler()
+    while true do
+        --Receive Packet
+        loglib.log("Main", "Receiving packet...")
+        local s, msg = sModem.receive()
+        local p = textutils.unserialize(msg)
+
+        loglib.log("Main", "Received packet with header: " .. p.head)
+
+        --Check Packet header
+        if p.head == "TEST" then
+            req(s, p)
+        end
+    end
 end
 
 
@@ -104,15 +146,5 @@ initDBs()
 
 --Main Loop
 while true do
-    --Receive Packet
-    loglib.log("Main", "Receiving packet...")
-    local s, msg = sModem.receive()
-    local p = textutils.unserialize(msg)
-
-    loglib.log("Main", "Received packet with header: " .. p.head)
-
-    --Check Packet header
-    if p.head == "" then
-        req(s, p)
-    end
+    parallel.waitForAny(timerHandler, receiveHandler)
 end
