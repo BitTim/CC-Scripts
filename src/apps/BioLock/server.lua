@@ -81,8 +81,150 @@ end
 --  Request Handlers
 -- --------------------------------
 
-local function req(s, p)
-    comlib.sendResponse(sModem, s, "TEST", "OK", nil)
+-- Function for handling normal authentication
+local function auth(s, p)
+    local checkStr = ""
+
+    -- Check if packet is valid
+    if p == nil then
+        comlib.sendResponse(sModem, s, "AUTH", "FAIL", {reason = "IPACK"})
+        return
+    end
+
+    -- Get auth data
+    local factors, tuuid, eName, uuuid, pinHash, aCode = table.unpack(p.contents)
+
+    -- Check if given factor types match the needed ones
+    local calcFactors = 0
+    if eName then calcFactors = calcFactors + 8 end
+    if uuuid then calcFactors = calcFactors + 4 end
+    if pinHash then calcFactors = calcFactors + 2 end
+    if aCode then calcFactors = calcFactors + 1 end
+
+    if factors ~= cTerm.factors then
+        comlib.sendResponse(sModem, s, "AUTH", "FAIL", {reason = "IFACT"})
+        return
+    end
+
+    if calcFactors ~= factors then
+        comlib.sendResponse(sModem, s, "AUTH", "FAIL", {reason = "IFACT"})
+        return
+    end
+
+    checkStr = checkStr .. textutils.serialise(factors)
+
+    -- Get the terminal data of the current request
+    local cTerm = nil
+    for _, v in pairs(tdb) do
+        if v.uuid == tuuid then
+            cTerm = v
+            break
+        end
+    end
+
+    -- Check if terminal exists
+    if cTerm == nil then
+        comlib.sendResponse(sModem, s, "AUTH", "FAIL", {reason = "ITERM"})
+        return
+    end
+
+    checkStr = checkStr .. textutils.serialise(tuuid)
+
+    -- Variable for holding user data
+    local user = nil
+
+    -- Convert given eName, if given, to uuuid
+    if eName then
+        local newUUUID = nil
+        for _, v in pairs(udb) do
+            if v.eName == eName then
+                newUUUID = v.uuid
+                user = v
+                break
+            end
+        end
+
+        if newUUUID == nil or user == nil then
+            comlib.sendResponse(sModem, s, "AUTH", "FAIL", {reason = "INAME"})
+            return
+        end
+
+        if uuuid ~= nil then
+            uuuid = newUUUID
+        end
+
+        checkStr = checkStr .. textutils.serialise(eName)
+    end
+
+    -- Chekci if uUUID is existing
+    if uuuid then
+        if user then
+            if uuuid ~= user.uuid then
+                comlib.sendResponse(sModem, s, "AUTH", "FAIL", {reason = "IUUID"})
+                return
+            end
+        else
+            for _, v in pairs(udb) do
+                if v.uuid == uuuid then
+                    user = v
+                    break
+                end
+            end
+
+            if user == nil then
+                comlib.sendResponse(sModem, s, "AUTH", "FAIL", {reason = "IUUID"})
+                return
+            end
+        end
+
+        checkStr = checkStr .. textutils.serialise(uuuid)
+     end
+
+    -- Check if given uUUID, if given, has access to current terminal
+    if uuuid then
+        local hasAccess = false
+        for _, v in pairs(cTerm.users) do
+            if v.uuid == uuuid then
+                hasAccess = true
+                break
+            end
+        end
+
+        if hasAccess == false then
+            comlib.sendResponse(sModem, s, "AUTH", "FAIL", {reason = "NOACC"})
+            return
+        end
+    end
+
+    -- Check if PIN hashes match, when given
+    if pinHash then
+        if pinHash ~= user.pinHash then
+            comlib.sendResponse(sModem, s, "AUTH", "FAIL", {reason = "IPINH"})
+            return
+        end
+
+        checkStr = checkStr .. textutils.serialise(pinHash)
+    end
+
+    -- Check if 2fa code matches, when given
+    if aCode then
+        if aCode ~= user.authCode.aCode and aCode ~= user.authCode.pCode then
+            comlib.sendResponse(sModem, s, "AUTH", "FAIL", {reason = "I2FAC"})
+            return
+        end
+
+        checkStr = checkStr .. textutils.serialise(aCode)
+    end
+
+    -- Return success packet
+    comlib.sendResponse(sModem, s, "AUTH", "OK", {check = checkStr})
+end
+
+
+
+-- Function for handling "personal temporary authentication number" (ptan) authentications
+local function ptan(s, p)
+
 end
 
 
@@ -122,8 +264,10 @@ local function receiveHandler()
             loglib.log("Main", "Received packet with header: " .. p.head)
 
             --Check Packet header
-            if p.head == "TEST" then
-                req(s, p)
+            if p.head == "AUTH" then
+                auth(s, p)
+            elseif p.head == "PTAN" then
+                ptan(s, p)
             end
         until true
     end

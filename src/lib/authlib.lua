@@ -34,6 +34,10 @@ M.AuthCode.__index = M.AuthCode
 
 -- Create new 2fa data handler
 function M.AuthCode:new(digits, resetTime)
+    -- Init Randomizers
+    math.randomseed(os.time() * 1000)
+    _ = math.random(); _ = math.random(); _ = math.random()
+    
     if digits == nil or digits < 1 then digits = 6 end
     if resetTime == nil or resetTime < 1 then resetTime = 30 end
 
@@ -53,10 +57,6 @@ end
 
 -- Generate new active code
 function M.AuthCode:gen()
-    -- Init Randomizers
-    math.randomseed(os.time() * 1000)
-    _ = math.random(); _ = math.random(); _ = math.random()
-
     -- Assign previous code
     self.pCode = self.aCode
 
@@ -108,8 +108,9 @@ end
 M.Terminal = {}
 M.Terminal.__index = M.Terminal
 
-function M.Terminal:new(uuid, name, users)
+function M.Terminal:new(uuid, name, users, factors)
     if uuid == nil then uuid = uuidLib.Generate() end
+    if factors == nil then factors = 0xa end
 
     local term = {}
     setmetatable(term, M.Terminal)
@@ -117,6 +118,7 @@ function M.Terminal:new(uuid, name, users)
     term.uuid = uuid
     term.name = name
     term.users = users
+    term.factors = factors
 
     return term
 end
