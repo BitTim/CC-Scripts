@@ -223,8 +223,44 @@ end
 
 
 -- Function for handling "personal temporary authentication number" (ptan) authentications
-local function ptan(s, p)
+local function ptanAuth(s, p)
+    -- Check if packet is valid
+    if p == nil then
+        comlib.sendResponse(sModem, s, "PTAN", "FAIL", {reason = "IPACK"})
+        return
+    end
 
+    -- Get auth data
+    local tuuid, ptanHash = table.unpack(p.contents)
+
+    local ptanObj = nil
+    for _, t in pairs(tdb) do
+        if t.uuid == tuuid then
+            for _, p in pairs(v.ptanList) do
+                if p.hash == ptanHash then
+                    ptanObj = p
+                    break
+                end
+            end
+
+            if ptanObj then break end
+        end
+    end
+
+    -- Check if PTAN Object exists
+    if ptanObj == nil then
+        comlib.sendResponse(sModem, s, "PTAN", "FAIL", {reason = "ITANH"})
+        return
+    end
+
+    -- Check if PTAN has uses and use it
+    if ptanObj:use() == false then
+        comlib.sendResponse(sModem, s, "PTAN", "FAIL", {reason = "IUSES"})
+        return
+    end
+
+    -- Return Success
+    comlib.sendResponse(sModem, s, "PTAN", "OK", {})
 end
 
 
@@ -267,7 +303,7 @@ local function receiveHandler()
             if p.head == "AUTH" then
                 auth(s, p)
             elseif p.head == "PTAN" then
-                ptan(s, p)
+                ptanAuth(s, p)
             end
         until true
     end

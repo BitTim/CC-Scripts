@@ -81,6 +81,34 @@ end
 
 
 
+-- Class for ptan data
+M.PTAN = {}
+M.PTAN.__index = M.PTAN
+
+function M.PTAN:new(hash, users, uses)
+    if uses == nil then uses = 1 end
+
+    local ptan = {}
+    setmetatable(ptan, M.PTAN)
+
+    ptan.hash = hash
+    ptan.users = users
+    ptan.uses = uses
+
+    return ptan
+end
+
+function M.PTAN:use()
+    if self.uses > 0 then
+        self.uses = self.uses - 1
+        return true
+    end
+
+    return false
+end
+
+
+
 
 -- Class for user data
 M.User = {}
@@ -108,9 +136,10 @@ end
 M.Terminal = {}
 M.Terminal.__index = M.Terminal
 
-function M.Terminal:new(uuid, name, users, factors)
+function M.Terminal:new(uuid, name, users, factors, ptanList)
     if uuid == nil then uuid = uuidLib.Generate() end
     if factors == nil then factors = 0xa end
+    if ptanList == nil then ptanList = {} end
 
     local term = {}
     setmetatable(term, M.Terminal)
@@ -119,6 +148,8 @@ function M.Terminal:new(uuid, name, users, factors)
     term.name = name
     term.users = users
     term.factors = factors
+
+    term.ptanList = ptanList
 
     return term
 end
