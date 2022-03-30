@@ -263,6 +263,43 @@ local function ptanAuth(s, p)
     comlib.sendResponse(sModem, s, "PTAN", "OK", {})
 end
 
+local function registerAuthClient(s, p)
+    -- Check if packet is valid
+    if p == nil then
+        comlib.sendResponse(sModem, s, "PTAN", "FAIL", {reason = "IPACK"})
+        return
+    end
+	
+	-- Get data
+	local uuuid, pinHash, address = table.unpack(p.contents)
+	
+	-- Get users
+	local user = nil
+	for _, v in pairs(udb) do
+		if v.uuid == uuuid then
+			user = v
+			break
+		end
+	end
+	
+	-- Check if user exists
+	if user == nil then
+		comlib.sendResponse(sModem, s, "REGAUTH", "FAIL", {reason = "IUUID"})
+		return
+	end
+	
+	-- Check if hashes match
+	if user.pinHash ~= pinHash then
+		comlib.sendResponse(sModem, s, "REGAUTH", "FAIL", {reason = "IPINH"})
+		return
+	end
+	
+	-- Add address of client to user
+	user.authCode:addClient(address)
+end
+
+-- TODO: Add request for cefrating a ptan
+
 
 
 
@@ -282,6 +319,9 @@ local function timerHandler()
             if v.authCode.timer == timer then
                 loglib.log(v.eName, v.authCode.aCode .. ", " .. v.authCode.time .. "s")
                 v.authCode:update()
+				
+				-- Send new code and time to every registered 2fa client
+				comlib.broadcast(sModem, v.authCode.clients, "AUTH_CODE_UPDT", {code = v.authCode.aCode, time = v.authCode.time}, 0.5)
                 break
             end
         end

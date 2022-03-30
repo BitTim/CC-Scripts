@@ -50,6 +50,8 @@ function M.AuthCode:new(digits, resetTime)
     authCode.aCode = nil
     authCode.pCode = nil
     authCode.time = 0
+	
+	authCode.clients = {}
 
     authCode.timer = nil
     return authCode
@@ -78,6 +80,11 @@ function M.AuthCode:update()
 
     self.timer = os.startTimer(1)
 end
+
+function M.AuthCode:addClient(address)
+	table.insert(self.clients, address)
+end
+
 
 
 
