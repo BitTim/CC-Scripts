@@ -133,7 +133,7 @@ local function history(args)
 
 	-- Print history
 	print("Transaction history of " .. db[uuid].name .. ": ")
-	print(textutils.unserialize(db[uuid].transactions))
+	print(textutils.serialize(db[uuid].transactions))
 end
 
 
