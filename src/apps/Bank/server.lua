@@ -59,7 +59,7 @@ local function updateDB()
     dbFile = fs.open(dbFilePath, "w")
     dbFile.write(textutils.serialize(db))                                           -- Write current DB to file
     dbFile.close()
-    log("updateDB", "Updated DB file")
+    loglib.log("updateDB", "Updated DB file")
 end
 
 local function getUUIDfromAccountNum(accountNum)

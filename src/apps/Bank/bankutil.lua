@@ -60,12 +60,11 @@ local function updateDB()
     dbFile = fs.open(dbFilePath, "w")
     dbFile.write(textutils.serialize(db))                                           -- Write current DB to file
     dbFile.close()
-    log("updateDB", "Updated DB file")
 end
 
 local function getUUIDfromAccountNum(accountNum)
     local uuid = nil
-    
+
     for k, v in pairs(db) do
         if v.accountNum == accountNum then
             uuid = k
