@@ -1,8 +1,8 @@
 -- ================================
 --  server.lua
 -- --------------------------------
---  Boilerplate code for
---  server scripts
+--  Server for use with the
+--  Bank project
 -- --------------------------------
 --  (C) Copyright 2022,
 --  Tim Anhalt (BitTim)
@@ -12,7 +12,7 @@
 --  Dependencies
 -- --------------------------------
 
-os.loadAPI("api/aeslua")
+os.loadAPI("lib/aeslua")
 local comlib = require("/lib/comlib")
 local loglib = require("/lib/loglib")
 

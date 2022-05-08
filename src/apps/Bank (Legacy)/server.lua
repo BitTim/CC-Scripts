@@ -193,7 +193,7 @@ local transfer = function(s, name, recipiant, amount)
     --Create reply packet
     local p = {head = "TRANSFER", state = "SUCCESS"}
     local reply = textutils.serialize(p)
-        
+
     --Send reply packet
     sModem.connect(s, 3)
     sModem.send(s, reply)
