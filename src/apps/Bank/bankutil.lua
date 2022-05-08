@@ -330,7 +330,7 @@ end
 --  Main Program
 -- --------------------------------
 
-loglib.init(title, version, 0.5)                                -- Initialize LogLib
+loglib.init(title, version, 0.5, true)						-- Initialize LogLib
 
 -- Initialize Database
 if not fs.exists(dbFilePath) then

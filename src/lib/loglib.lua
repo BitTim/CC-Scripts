@@ -35,11 +35,13 @@ end
 local M = {}
 
 -- Initialize library
-function M.init(title, version, scale)
+function M.init(title, version, scale, noMon)
+    noMon = noMon or false
+    
     setTitle(title, version)
 
     local mon = peripheral.find("monitor")
-    if mon then
+    if mon and not noMon then
         mon.setTextScale(scale)
         term.redirect(mon)
         setTitle(title, version)
