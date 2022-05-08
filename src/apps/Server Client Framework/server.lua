@@ -26,7 +26,7 @@ local modemSide = "top"
 -- --------------------------------
 
 local title = "Server"
-local version = "v1.0"
+local version = "v2.0"
 
 -- --------------------------------
 --  Internal Properties
@@ -72,7 +72,7 @@ while true do
     local p = textutils.unserialize(msg)
 
     loglib.log("Main", "Received packet with header: " .. p.head)
-    
+
     --Check Packet header
     if p.head == "" then
         req(s, p)
