@@ -21,8 +21,15 @@ local loglib = require("/lib/loglib")
 -- --------------------------------
 
 local modemSide = "top"
-local totalAssets = "100000"        -- Total amount of money in circulation
+local totalAssets = 200             -- Total amount of money in circulation
 local authThreshold = 100           -- If amount of payment is above this threshold, auth is required
+
+local taxPercentageNormal = 5
+local taxPercentageDouble = 15
+local taxPercentageMax = 40
+
+local taxInterval = "30"
+-- local taxInterval = "604800"        -- Interval for applying taxes (604800 Seconds = 1 Week)
 
 -- --------------------------------
 --  Constants
@@ -64,7 +71,7 @@ end
 
 local function getUUIDfromAccountNum(accountNum)
     local uuid = nil
-    
+
     for k, v in pairs(db) do
         if v.accountNum == accountNum then
             uuid = k
@@ -73,6 +80,16 @@ local function getUUIDfromAccountNum(accountNum)
     end
 
     return uuid
+end
+
+local function getNumAccounts()
+    local numAccounts = 0
+
+    for _, _ in pairs(db) do
+        numAccounts = numAccounts + 1
+    end
+
+    return numAccounts
 end
 
 local function getBalance(uuid, asNumber)
@@ -92,6 +109,27 @@ local function addTransactionEntry(fromUUID, toUUID, amount, desc)
     table.insert(db[fromUUID].transactions, { from = fromUUID, to = toUUID, amount = amount, desc = desc })
     table.insert(db[toUUID].transactions, { from = fromUUID, to = toUUID, amount = amount, desc = desc })
     updateDB()
+end
+
+local function getTaxPercentage(uuid)
+    local bal = getBalance(uuid)
+    local normalPerAcc = totalAssets / getNumAccounts()
+
+    if bal <= normalPerAcc then
+        return (taxPercentageNormal / normalPerAcc) * bal
+    elseif bal > normalPerAcc and bal <= normalPerAcc * 2 then
+        local dy = taxPercentageDouble - taxPercentageNormal
+        return (dy / normalPerAcc) * (bal - normalPerAcc) + taxPercentageNormal
+    else
+        local dx = totalAssets - (2 * normalPerAcc)
+        local dy = taxPercentageMax - taxPercentageDouble
+        return (dy / dx) * (x - (2 * normalPerAcc)) + taxPercentageDouble
+    end
+end
+
+local function getAmountfromPercentage(uuid, percentage)
+    local bal = getBalance(uuid)
+    return bal * (percentage / 100)
 end
 
 
@@ -141,9 +179,17 @@ end
 local function payment(s, p)
     local uuid, to, amount, desc, cardUUID, hash = p.contents.uuid, p.contents.to, p.contents.amount, p.contents.desc, p.contents.cardUUID, p.contents.hash
     local toUUID = getUUIDfromAccountNum(to);
+
     amount = tonumber(amount)
+    desc = desc or ""
 
     -- Check all fail states
+    if uuid == nil or to == nil or amount == nil or cardUUID == nil then
+        loglib.log("PAY", "Fail, invalid parameters")
+        comlib.sendResponse(sModem, s, "PAY", "FAIL", { reason = "INV_PARAMS" })
+        return
+    end
+
     if db[uuid] == nil then
         loglib.log("PAY", "Fail, account not existing")
         comlib.sendResponse(sModem, s, "PAY", "FAIL", { reason = "ACC_NOT_EXIST" })
@@ -196,6 +242,58 @@ local function payment(s, p)
 
     -- Send response
     comlib.sendResponse(sModem, s, "PAY", "OK", {})
+end
+
+local function tax(s, p)
+    local totalTaxAmount = 0
+    local changes = {}
+
+    -- Get amounts and percentages
+    loglib.log("TAX", "Iterating over all accounts to get percentages and amounts")
+    for uuid, _ in pairs(db) do
+        local percentage = getTaxPercentage(uuid)
+        local amount = getAmountfromPercentage(uuid, percentage)
+        totalTaxAmount = totalTaxAmount + amount
+
+        changes[uuid] = {}
+        changes[uuid].amount = -amount
+        changes[uuid].perc = percentage
+        changes[uuid].taken = amount
+    end
+
+    -- Calc even share
+    local amountPerAcc = totalTaxAmount / getNumAccounts()
+    loglib.log("TAX", "Current share is: " .. amountPerAcc .. "$")
+
+    -- Apply changes
+    loglib.log("TAX", "Iterating over every account and applying changes")
+    for uuid, _ in pairs(db) do
+        local amount, percentage, taken = changes[uuid].amount, changes[uuid].perc, changes[uuid].taken
+
+        amount = amount + amountPerAcc
+
+        local bal = getBalance(uuid)
+        setBalance(uuid, bal + amount)
+
+        -- Crate entry for transaction
+        local transactionObj = {}
+        transactionObj.from = "TAX"
+        transactionObj.to = uuid
+        transactionObj.amount = math.abs(amount)
+        transactionObj.desc = "[Taxes] Percentage: " .. percentage .. "%, Taken: " .. taken .. "$, Given: " .. amountPerAcc .. "$"
+
+        if amount < 0 then
+            local tmp = transactionObj.from
+            transactionObj.from = transactionObj.to
+            transactionObj.to = tmp
+        end
+
+        -- Insert transaction into history
+        table.insert(db[uuid].transactions, transactionObj)
+    end
+
+    loglib.log("TAX", "Finished")
+    comlib.sendResponse(sModem, s, "TAX", "OK", {})
 end
 
 
@@ -254,5 +352,7 @@ while true do
         history(s, p)
     elseif p.head == "PAY" then
         payment(s, p)
+    elseif p.head == "TAX" then
+        tax(s, p)
     end
 end

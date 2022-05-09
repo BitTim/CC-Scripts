@@ -217,7 +217,7 @@ local remove = function(args)
     end
 
     --Check if user exists
-    if db[args[2]] == nil then
+    if db[getUUIDfromAccountNum(args[2])] == nil then
         term.setTextColor(colors.orange)
         print("Account " .. args[2] .. " does not exist")
         return
