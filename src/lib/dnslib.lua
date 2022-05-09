@@ -56,7 +56,9 @@ function M.lookup(domain)
     local response = comlib.sendRequest(M.sModem, M.dnsAddress, "LOOKUP", {domain = domain})
     if response == -1 then return -1 end
 
-    -- TODO: Implement check for not found domain
+    if response.contents == nil or response.contents.address == nil then
+        return -1
+    end
 
     return response.contents.address
 end

@@ -13,9 +13,9 @@
 --  Dependencies
 -- --------------------------------
 
-os.loadAPI("lib/sha")
-os.loadAPI("lib/aeslua")
-local uuidlib = require("/lib/uuid")
+os.loadAPI("/lib/ThirdParty/sha")
+os.loadAPI("/lib/ThirdParty/aeslua")
+local uuidlib = require("/lib/ThirdParty/uuid")
 local loglib = require("/lib/loglib")
 
 -- --------------------------------

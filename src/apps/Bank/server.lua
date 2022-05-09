@@ -12,7 +12,7 @@
 --  Dependencies
 -- --------------------------------
 
-os.loadAPI("lib/aeslua")
+os.loadAPI("lib/ThirdParty/aeslua")
 local comlib = require("/lib/comlib")
 local loglib = require("/lib/loglib")
 
@@ -22,7 +22,7 @@ local loglib = require("/lib/loglib")
 
 local modemSide = "top"
 local totalAssets = "100000"        -- Total amount of money in circulation
-local authThreshold = "100"         -- If amount of payment is above this threshold, auth is required
+local authThreshold = 100           -- If amount of payment is above this threshold, auth is required
 
 -- --------------------------------
 --  Constants
@@ -111,13 +111,13 @@ local function balance(s, p)
 
     if db[uuid] == nil then
         loglib.log("BAL", "Fail, account not existing")
-        comlib.sendResponse(s, "BAL", "FAIL", { reason = "ACC_NOT_EXIST" })
+        comlib.sendResponse(sModem, s, "BAL", "FAIL", { reason = "ACC_NOT_EXIST" })
         return
     end
 
     local bal = getBalance(uuid, false)
 
-    comlib.sendResponse(s, "BAL", "OK", { balance = bal })
+    comlib.sendResponse(sModem, s, "BAL", "OK", { balance = bal })
     loglib.log("BAL", "Responded with " .. bal .. "$ to " .. s)
 end
 
@@ -127,62 +127,62 @@ local function history(s, p)
 
     if db[uuid] == nil then
         loglib.log("HIST", "Fail, account not existing")
-        comlib.sendResponse(s, "HIST", "FAIL", { reason = "ACC_NOT_EXIST" })
+        comlib.sendResponse(sModem, s, "HIST", "FAIL", { reason = "ACC_NOT_EXIST" })
         return
     end
 
     local hist = db[uuid].transactions
 
-    comlib.sendResponse(s, "HIST", "OK", { history = hist })
+    comlib.sendResponse(sModem, s, "HIST", "OK", { history = hist })
     loglib.log("HIST", "Responded with history of " .. db[uuid].name .. " to " .. s)
 end
 
 -- Move money from one account to another
 local function payment(s, p)
-    local uuid, to, amount, desc, cardUUID, hash = table.unpack(p.contents)
+    local uuid, to, amount, desc, cardUUID, hash = p.contents.uuid, p.contents.to, p.contents.amount, p.contents.desc, p.contents.cardUUID, p.contents.hash
     local toUUID = getUUIDfromAccountNum(to);
     amount = tonumber(amount)
-    
+
     -- Check all fail states
     if db[uuid] == nil then
         loglib.log("PAY", "Fail, account not existing")
-        comlib.sendResponse(s, "PAY", "FAIL", { reason = "ACC_NOT_EXIST" })
+        comlib.sendResponse(sModem, s, "PAY", "FAIL", { reason = "ACC_NOT_EXIST" })
         return
     end
 
     if toUUID == nil then
         loglib.log("PAY", "Failed, recipiant does not exits")
-        comlib.sendResponse(s, "PAY", "FAIL", { reason = "TO_NOT_EXISTS" })
+        comlib.sendResponse(sModem, s, "PAY", "FAIL", { reason = "TO_NOT_EXISTS" })
         return
     end
 
     if amount > authThreshold and hash == nil then
         loglib.log("PAY", "Failed, amount above threshold and no auth")
-        comlib.sendResponse(s, "PAY", "FAIL", { reason = "NO_AUTH" })
+        comlib.sendResponse(sModem, s, "PAY", "FAIL", { reason = "NO_AUTH" })
         return
     end
 
     if amount > authThreshold and hash ~= db[uuid].hash then
         loglib.log("PAY", "Failed, wrong PIN")
-        comlib.sendResponse(s, "PAY", "FAIL", { reason = "WRONG_PIN" })
+        comlib.sendResponse(sModem, s, "PAY", "FAIL", { reason = "WRONG_PIN" })
         return
     end
 
     if cardUUID == nil or cardUUID ~= db[uuid].cardUUID then
         loglib.log("PAY", "Failed, invalid card was used")
-        comlib.sendResponse(s, "PAY", "FAIL", { reason = "INV_CARD" })
+        comlib.sendResponse(sModem, s, "PAY", "FAIL", { reason = "INV_CARD" })
         return
     end
 
     if amount <= 0 then
         loglib.log("PAY", "Failed, amount 0 or less")
-        comlib.sendResponse(s, "PAY", "FAIL", { reason = "AMNT_LEQ_ZERO" })
+        comlib.sendResponse(sModem, s, "PAY", "FAIL", { reason = "AMNT_LEQ_ZERO" })
         return
     end
 
     if getBalance(uuid) < amount then
         loglib.log("PAY", "Failed, balance too low")
-        comlib.sendResponse(s, "PAY", "FAIL", { reason = "BAL_TOO_LOW" })
+        comlib.sendResponse(sModem, s, "PAY", "FAIL", { reason = "BAL_TOO_LOW" })
         return
     end
 
@@ -195,7 +195,7 @@ local function payment(s, p)
     loglib.log("PAY", "Added transaction entry")
 
     -- Send response
-    comlib.sendResponse(s, "PAY", "OK", {})
+    comlib.sendResponse(sModem, s, "PAY", "OK", {})
 end
 
 
@@ -230,7 +230,7 @@ db = textutils.unserialize(dbFile.readAll())
 dbFile.close()
 
 --Import Encryption Key
-log("Init", "Importing encryption key")
+loglib.log("Init", "Importing encryption key")
 keyFile = fs.open(".key", "r")
 key = keyFile.readAll()
 keyFile.close()

@@ -43,7 +43,7 @@ end
 function M.sendRequest(sModem, address, header, contents, timeout)
     -- Set defult values for not specified variables
     if timeout == nil then timeout = 10 end
-    if sModem == nil then return end
+    if sModem == nil then return -1 end
 
     -- Connect to Server
     local ret = sModem.connect(address, 3)
@@ -56,12 +56,12 @@ function M.sendRequest(sModem, address, header, contents, timeout)
     -- Send packet and wait for response
     sModem.send(address, request)
     local sender, msg = sModem.receive(address, timeout)
-        
+
     -- Check for timeout
     if sender == nil then
         return -1
     end
-    
+
     local response = textutils.unserialize(msg)
 
     -- Check if reply is valid
