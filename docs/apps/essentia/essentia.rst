@@ -79,7 +79,7 @@ To run and execute the autmated installer, run these commands. The installer wil
 
 .. code-block:: console
 
-    wget https://github.com/BitTim/CC-Scripts/src/apps/Essentia/install.lua
+    wget https://raw.githubusercontent.com/BitTim/CC-Scripts/master/src/apps/Essentia/install.lua
     install
 
 
