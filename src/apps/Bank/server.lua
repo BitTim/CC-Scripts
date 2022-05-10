@@ -28,9 +28,6 @@ local taxPercentageNormal = 5
 local taxPercentageDouble = 15
 local taxPercentageMax = 40
 
-local taxInterval = "30"
--- local taxInterval = "604800"        -- Interval for applying taxes (604800 Seconds = 1 Week)
-
 -- --------------------------------
 --  Constants
 -- --------------------------------
