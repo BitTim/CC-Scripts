@@ -92,6 +92,21 @@ local function getNumAccounts()
     return numAccounts
 end
 
+local function getRandomAccountUUID()
+    local numAccounts = getNumAccounts()
+    local iterations = math.random(numAccounts)
+    local retUUID = ""
+
+    local i = 1
+    for uuid, _ in pairs(db) do
+        retUUID = uuid
+        i = i + 1
+        if i > iterations then break end
+    end
+
+    return retUUID
+end
+
 local function getBalance(uuid, asNumber)
     asNumber = asNumber or true
 
@@ -129,7 +144,7 @@ end
 
 local function getAmountfromPercentage(uuid, percentage)
     local bal = getBalance(uuid)
-    return bal * (percentage / 100)
+    return math.floor(bal * (percentage / 100) * 100) / 100
 end
 
 
@@ -259,16 +274,24 @@ local function tax(s, p)
         changes[uuid].amount = -amount
         changes[uuid].perc = percentage
         changes[uuid].taken = amount
+        changes[uuid].leftover = 0
     end
 
     -- Calc even share
-    local amountPerAcc = totalTaxAmount / getNumAccounts()
+    loglib.log("TAX", "Total tax pool: " .. totalTaxAmount .. "$")
+    local amountPerAcc = math.floor(totalTaxAmount / getNumAccounts() * 100) / 100
     loglib.log("TAX", "Current share is: " .. amountPerAcc .. "$")
+
+    -- Add the leftover amount to random account
+    local leftover = math.floor((totalTaxAmount - (amountPerAcc * getNumAccounts())) * 100 + 0.5) / 100
+    local luckyOne = getRandomAccountUUID()
+    changes[luckyOne].leftover = changes[luckyOne].leftover + leftover
+    loglib.log("TAX", "Added leftover amount of " .. leftover .. "$ to " .. db[luckyOne].accountNum)
 
     -- Apply changes
     loglib.log("TAX", "Iterating over every account and applying changes")
     for uuid, _ in pairs(db) do
-        local amount, percentage, taken = changes[uuid].amount, changes[uuid].perc, changes[uuid].taken
+        local amount, percentage, taken, leftover = changes[uuid].amount, changes[uuid].perc, changes[uuid].taken, changes[uuid].leftover
 
         amount = amount + amountPerAcc
 
@@ -280,7 +303,7 @@ local function tax(s, p)
         transactionObj.from = "TAX"
         transactionObj.to = uuid
         transactionObj.amount = math.abs(amount)
-        transactionObj.desc = "[Taxes] Percentage: " .. percentage .. "%, Taken: " .. taken .. "$, Given: " .. amountPerAcc .. "$"
+        transactionObj.desc = "[Taxes] Percentage: " .. percentage .. "%, Taken: " .. taken .. "$, Given: " .. amountPerAcc + leftover .. "$"
 
         if amount < 0 then
             local tmp = transactionObj.from
@@ -307,6 +330,8 @@ end
 -- --------------------------------
 --  Main Program
 -- --------------------------------
+
+math.randomseed(os.time())
 
 sModem = comlib.open(modemSide)                                 -- Create Secure Modem
 loglib.init(title, version, 0.5)                                -- Initialize LogLib

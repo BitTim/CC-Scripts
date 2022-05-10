@@ -24,7 +24,6 @@ local loglib = require("/lib/loglib")
 
 local diskSide = "bottom"
 local cardBrandName = "Omnicard"
-local totalAssets = "100000"        -- Total amount of money in circulation
 
 -- --------------------------------
 --  Constants
@@ -93,8 +92,8 @@ end
 
 -- Function to List user entries
 local list = function(args)
-    for k, v in pairs(db) do
-        print(k .. ": " .. textutils.serialize(v))
+    for _, v in pairs(db) do
+        print("[" .. v.accountNum .. "]: " .. v.name)
     end
 end
 
@@ -308,7 +307,7 @@ local take = function(args)
         return
     end
 
-	local uuid = getUUIDfromAccountNum(agrs[2])
+	local uuid = getUUIDfromAccountNum(args[2])
 
     local bal = getBalance(uuid)
     bal = bal - tonumber(args[3])
