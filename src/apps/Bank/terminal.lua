@@ -1,8 +1,8 @@
 -- ================================
---  client.lua
+--  terminal.lua
 -- --------------------------------
---  Boilerplate code for
---  client scripts
+--  Terminal to access bank
+--  accounts and manage funds
 -- --------------------------------
 --  (C) Copyright 2022,
 --  Tim Anhalt (BitTim)
