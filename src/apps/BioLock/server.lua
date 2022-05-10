@@ -266,7 +266,7 @@ end
 local function registerAuthClient(s, p)
     -- Check if packet is valid
     if p == nil then
-        comlib.sendResponse(sModem, s, "PTAN", "FAIL", {reason = "IPACK"})
+        comlib.sendResponse(sModem, s, "REGAUTH", "FAIL", {reason = "IPACK"})
         return
     end
 	
@@ -296,9 +296,10 @@ local function registerAuthClient(s, p)
 	
 	-- Add address of client to user
 	user.authCode:addClient(address)
+    comlib.sendResponse(sModem, s, "REGAUTH", "OK", {})
 end
 
--- TODO: Add request for cefrating a ptan
+-- TODO: Add request for creating a ptan
 
 
 
@@ -344,6 +345,8 @@ local function receiveHandler()
                 auth(s, p)
             elseif p.head == "PTAN" then
                 ptanAuth(s, p)
+            elseif p.head == "REGAUTH" then
+                registerAuthClient(s, p)
             end
         until true
     end
