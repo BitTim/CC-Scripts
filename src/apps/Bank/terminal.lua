@@ -81,7 +81,7 @@ end
 
 local function createStyles()
     local bgStyle = uilib.Style:new(colors.black, colors.white)
-    local btnStyle = uilib.Style:new(colors.white, colors.red, colors.white, colors.gray, colors.lightGray, colors.gray, colors.lightGray)
+    local btnStyle = uilib.Style:new(colors.white, colors.red, colors.white, colors.gray, colors.lightGray, colors.gray, colors.lightGray, colors.white)
 
     styles.bg = bgStyle
     styles.btn = btnStyle
@@ -112,16 +112,21 @@ local function createUI()
         "bg")
 
     homeScreen:add(
-        uilib.Button:new("Account Info", 4, 7, 18, 5, homeScreen, onRedirectBtnClick, {"accountInfo"}, false, styles.btn, true),
+        -- Logo needs to be 49x7 in size
+        uilib.Image:new("/assets/logo.nfp", 2, 2, homeScreen),
+        "logoImage")
+
+    homeScreen:add(
+        uilib.Button:new("Account Info", 4, 10, 18, 3, homeScreen, onRedirectBtnClick, {"accountInfo"}, false, styles.btn, "\x7f", 1),
         "accountInfoBtn")
     homeScreen:add(
-        uilib.Button:new("Send Funds", 4, 14, 18, 5, homeScreen, onRedirectBtnClick, {"sendFunds"}, false, styles.btn, true),
+        uilib.Button:new("Send Funds", 4, 15, 18, 3, homeScreen, onRedirectBtnClick, {"sendFunds"}, false, styles.btn, "\x7f", 1),
         "sendFundsBtn")
     homeScreen:add(
-        uilib.Button:new("Change PIN", 31, 7, 18, 5, homeScreen, onRedirectBtnClick, {"changePIN"}, false, styles.btn, true),
+        uilib.Button:new("Change PIN", 31, 10, 18, 3, homeScreen, onRedirectBtnClick, {"changePIN"}, false, styles.btn, "\x7f", 1),
         "changePINBtn")
     homeScreen:add(
-        uilib.Button:new("Exit", 31, 14, 18, 5, homeScreen, onExitBtnClick, {}, false, styles.btn, true),
+        uilib.Button:new("Exit", 31, 15, 18, 3, homeScreen, onExitBtnClick, {}, false, styles.btn, "\x7f", 1),
         "exitBtn")
 
     ui["homeScreen"] = homeScreen
@@ -136,7 +141,7 @@ local function createUI()
         "bg")
 
     accountInfo:add(
-        uilib.Button:new("Back", 2, 2, 6, 3, accountInfo, onRedirectBtnClick, {"homeScreen"}, false, styles.btn, true),
+        uilib.Button:new("Back", 2, 2, 6, 3, accountInfo, onRedirectBtnClick, {"homeScreen"}, false, styles.btn, "\x7f", 1),
         "backBtn")
 
     ui["accountInfo"] = accountInfo
@@ -151,7 +156,7 @@ local function createUI()
         "bg")
 
     sendFunds:add(
-        uilib.Button:new("Back", 2, 2, 6, 3, sendFunds, onRedirectBtnClick, {"homeScreen"}, false, styles.btn, true),
+        uilib.Button:new("Back", 2, 2, 6, 3, sendFunds, onRedirectBtnClick, {"homeScreen"}, false, styles.btn, "\x7f", 1),
         "backBtn")
 
     ui["sendFunds"] = sendFunds
@@ -166,7 +171,7 @@ local function createUI()
         "bg")
 
         changePIN:add(
-        uilib.Button:new("Back", 2, 2, 6, 3, changePIN, onRedirectBtnClick, {"homeScreen"}, false, styles.btn, true),
+        uilib.Button:new("Back", 2, 2, 6, 3, changePIN, onRedirectBtnClick, {"homeScreen"}, false, styles.btn, "\x7f", 1),
         "backBtn")
 
     ui["changePIN"] = changePIN
@@ -224,6 +229,7 @@ while run do
 
         cardLoaded = true
         onRedirectBtnClick("homeScreen")
+        drawUI()
     end
 
     -- Check for events

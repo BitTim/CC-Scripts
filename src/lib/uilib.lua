@@ -15,7 +15,7 @@ local M = {}
 M.Style = {}
 M.Style.__index = M.Style
 
-function M.Style:new(normalFG, normalBG, pressedFG, pressedBG, disabledFG, disabledBG, shadowColor)
+function M.Style:new(normalFG, normalBG, pressedFG, pressedBG, disabledFG, disabledBG, shadowFG, shadowBG)
     local style = {}
     setmetatable(style, M.Style)
 
@@ -25,7 +25,8 @@ function M.Style:new(normalFG, normalBG, pressedFG, pressedBG, disabledFG, disab
     if pressedBG == nil then pressedBG = colors.lime end
     if disabledFG == nil then disabledFG = colors.gray end
     if disabledBG == nil then disabledBG = colors.lightGray end
-    if shadowColor == nil then shadowColor = colors.black end
+    if shadowFG == nil then shadowFG = colors.lightGray end
+    if shadowBG == nil then shadowBG = colors.black end
 
     style.normalFG = normalFG
     style.normalBG = normalBG
@@ -33,7 +34,8 @@ function M.Style:new(normalFG, normalBG, pressedFG, pressedBG, disabledFG, disab
     style.pressedBG = pressedBG
     style.disabledFG = disabledFG
     style.disabledBG = disabledBG
-    style.shadowColor = shadowColor
+    style.shadowFG = shadowFG
+    style.shadowBG = shadowBG
 
     return style
 end
@@ -45,6 +47,10 @@ function M.Style:getColors(pressed, disabled)
     if disabled then return self.disabledFG, self.disabledBG end
     if pressed then return self.pressedFG, self.pressedBG end
     return self.normalFG, self.normalBG
+end
+
+function M.Style:getShadowColors()
+    return self.shadowFG, self.shadowBG
 end
 
 
@@ -102,6 +108,52 @@ end
 
 -- Function to hide the label
 function M.Label:hide()
+    self.visible = false
+end
+
+
+
+
+
+
+
+
+-- Class that holds properties for an image
+
+M.Image = {}
+M.Image.__index = M.Image
+
+function M.Image:new(imgPath, x, y, parent)
+    local image = {}
+    setmetatable(image, M.Image)
+
+    image.imgData = paintutils.loadImage(imgPath)
+    image.x = x
+    image.y = y
+    image.parent = parent
+
+    image.visible = true
+
+    return image
+end
+
+-- Draws the Image
+function M.Image:draw()
+    if self.visible == false then return end
+
+    local x, y = self.x, self.y
+    if self.parent then x, y = self.parent:convLocalToGlobal(x, y) end
+
+    paintutils.drawImage(self.imgData, x, y)
+end
+
+-- Function to show the image
+function M.Image:show()
+    self.visible = true
+end
+
+-- Function to hide the Image
+function M.Image:hide()
     self.visible = false
 end
 
@@ -179,13 +231,14 @@ end
 M.Button = {}
 M.Button.__index = M.Button
 
-function M.Button:new(text, x, y, w, h, parent, action, args, toggle, style, shadow)
+function M.Button:new(text, x, y, w, h, parent, action, args, toggle, style, shadowChar, shadowSize)
     local btn = {}
     setmetatable(btn, M.Button)
 
     toggle = toggle or false
     style = style or M.Style:new()
-    shadow = shadow or false
+    shadowChar = shadowChar or " "
+    shadowSize = shadowSize or 0
 
     btn.text = text
     btn.x = x
@@ -198,7 +251,9 @@ function M.Button:new(text, x, y, w, h, parent, action, args, toggle, style, sha
     btn.action = action
     btn.args = args
     btn.toggle = toggle
-    btn.shadow = shadow
+
+    btn.shadowChar = shadowChar
+    btn.shadowSize = shadowSize
 
     btn.visible = true
     btn.pressed = false
@@ -212,29 +267,41 @@ function M.Button:draw()
     if self.visible == false then return end
 
     local fg, bg = self.style:getColors(self.pressed, self.disabled)
+    local sfg, sbg = self.style:getShadowColors()
     local x, y = self.x, self.y
 
     if self.parent then x, y = self.parent:convLocalToGlobal(x, y) end
 
-    -- Iterate over the area of the button
-    for j = 1, self.h do
-        for i = 1, self.w do
+    -- Iterate over the area of the button + shadow
+    for j = 1, self.h + self.shadowSize do
+        for i = 1, self.w + self.shadowSize do
             term.setCursorPos(x + (i - 1), y + (j - 1))
-            term.setTextColor(fg)
-            term.setBackgroundColor(bg)
 
-            -- If vertically in the center, draw text
-            if j == math.ceil(self.h / 2) then
-                -- Draw Padding
-                if i == 1 or i == self.w or (i - 1) > string.len(self.text) then
-                    term.write(" ")
+            if j <= self.h and i <= self.w then
+                -- Draw Button
+                term.setTextColor(fg)
+                term.setBackgroundColor(bg)
+
+                -- If vertically in the center, draw text
+                if j == math.ceil(self.h / 2) then
+                    -- Draw Padding
+                    if i == 1 or i == self.w or (i - 1) > string.len(self.text) then
+                        term.write(" ")
+                    else
+                        term.write(string.sub(self.text, i - 1, i - 1))
+                    end
                 else
-                    term.write(string.sub(self.text, i - 1, i - 1))
+                    term.write(" ")
                 end
-            else
-                term.write(" ")
+            elseif j > 1 and i > 1 then
+                -- Draw Shadow
+                term.setTextColor(sfg)
+                term.setBackgroundColor(sbg)
+
+                term.write(self.shadowChar)
             end
 
+            -- Reset colors
             term.setTextColor(colors.white)
             term.setBackgroundColor(colors.black)
         end
