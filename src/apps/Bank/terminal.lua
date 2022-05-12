@@ -14,6 +14,7 @@
 
 local comlib = require("/lib/comlib")
 local dnslib = require("/lib/dnslib")
+local uilib = require("/lib/uilib")
 
 -- --------------------------------
 --  Configurable Properties
@@ -21,6 +22,7 @@ local dnslib = require("/lib/dnslib")
 
 local modemSide = "top"
 local serverDomain = "bank.test"
+local cardBrandName = "Omnicard"
 
 -- --------------------------------
 --  Constants
@@ -28,6 +30,7 @@ local serverDomain = "bank.test"
 
 local title = "Client"
 local version = "v2.0"
+local screenSize = { w = 51, h = 19 }
 
 -- --------------------------------
 --  Internal Properties
@@ -35,6 +38,148 @@ local version = "v2.0"
 
 local sModem = nil
 local serverAddress = nil
+local run = true
+
+local activeScreen = "titleScreen"
+local ui = {}
+local styles = {}
+
+local uuid = nil
+local cardUUID = nil
+local cardLoaded = false
+
+
+
+
+
+
+
+-- --------------------------------
+--  Click events
+-- --------------------------------
+
+local function onRedirectBtnClick(targetID)
+    ui[activeScreen]:hide()
+    ui[targetID]:show()
+
+    activeScreen = targetID
+end
+
+local function onExitBtnClick()
+    run = false
+end
+
+
+
+
+
+
+
+-- --------------------------------
+--  Local functions
+-- --------------------------------
+
+local function createStyles()
+    local bgStyle = uilib.Style:new(colors.black, colors.white)
+    local btnStyle = uilib.Style:new(colors.white, colors.red, colors.white, colors.gray, colors.lightGray, colors.gray, colors.lightGray)
+
+    styles.bg = bgStyle
+    styles.btn = btnStyle
+end
+
+local function createUI()
+    createStyles()
+
+    -- Title screen
+    local titleScreen = uilib.Group:new(1, 1, nil, "bg", {})
+    titleScreen:add(
+        uilib.Panel:new(" ", 1, 1, screenSize.w, screenSize.h, titleScreen, styles.bg),
+        "bg")
+
+    titleScreen:add(
+        uilib.Label:new("[TMP] Please insert your " .. cardBrandName, 2, 2, titleScreen, styles.bg)
+    )
+
+    ui["titleScreen"] = titleScreen
+
+
+
+
+    -- Home Screen
+    local homeScreen = uilib.Group:new(1, 1, nil, "bg", {})
+    homeScreen:add(
+        uilib.Panel:new(" ", 1, 1, screenSize.w, screenSize.h, homeScreen, styles.bg),
+        "bg")
+
+    homeScreen:add(
+        uilib.Button:new("Account Info", 4, 7, 18, 5, homeScreen, onRedirectBtnClick, {"accountInfo"}, false, styles.btn, true),
+        "accountInfoBtn")
+    homeScreen:add(
+        uilib.Button:new("Send Funds", 4, 14, 18, 5, homeScreen, onRedirectBtnClick, {"sendFunds"}, false, styles.btn, true),
+        "sendFundsBtn")
+    homeScreen:add(
+        uilib.Button:new("Change PIN", 31, 7, 18, 5, homeScreen, onRedirectBtnClick, {"changePIN"}, false, styles.btn, true),
+        "changePINBtn")
+    homeScreen:add(
+        uilib.Button:new("Exit", 31, 14, 18, 5, homeScreen, onExitBtnClick, {}, false, styles.btn, true),
+        "exitBtn")
+
+    ui["homeScreen"] = homeScreen
+
+
+
+
+    -- Account Info
+    local accountInfo = uilib.Group:new(1, 1, nil, "bg", {})
+    accountInfo:add(
+        uilib.Panel:new(" ", 1, 1, screenSize.w, screenSize.h, accountInfo, styles.bg),
+        "bg")
+
+    accountInfo:add(
+        uilib.Button:new("Back", 2, 2, 6, 3, accountInfo, onRedirectBtnClick, {"homeScreen"}, false, styles.btn, true),
+        "backBtn")
+
+    ui["accountInfo"] = accountInfo
+
+
+
+
+    -- Send Funds
+    local sendFunds = uilib.Group:new(1, 1, nil, "bg", {})
+    sendFunds:add(
+        uilib.Panel:new(" ", 1, 1, screenSize.w, screenSize.h, sendFunds, styles.bg),
+        "bg")
+
+    sendFunds:add(
+        uilib.Button:new("Back", 2, 2, 6, 3, sendFunds, onRedirectBtnClick, {"homeScreen"}, false, styles.btn, true),
+        "backBtn")
+
+    ui["sendFunds"] = sendFunds
+
+
+
+
+    -- Change PIN
+    local changePIN = uilib.Group:new(1, 1, nil, "bg", {})
+    changePIN:add(
+        uilib.Panel:new(" ", 1, 1, screenSize.w, screenSize.h, changePIN, styles.bg),
+        "bg")
+
+        changePIN:add(
+        uilib.Button:new("Back", 2, 2, 6, 3, changePIN, onRedirectBtnClick, {"homeScreen"}, false, styles.btn, true),
+        "backBtn")
+
+    ui["changePIN"] = changePIN
+end
+
+local function drawUI()
+    ui[activeScreen]:draw()
+end
+
+local function onClick(x, y)
+    ui[activeScreen]:clickEvent(x, y)
+end
+
 
 
 
@@ -54,42 +199,52 @@ end
 
 serverAddress = dnslib.lookup(serverDomain)                     -- Lookup Address of Server
 
-local card = fs.open("/disk/.auth", "r")
-local uuid = card.readLine()
-local cardUUID = card.readLine()
-card.close()
+createUI()
+drawUI()
 
 --Main Loop
-while true do
-    repeat
-        -- Get Input
-        term.setTextColor(colors.yellow)
-        term.write("Client> ")
-        term.setTextColor(colors.white)
-        local cmd = read()
-        term.setTextColor(colors.lightGray)
-
-        -- Tokeinze input
-        local tokens = {}
-        for s in string.gmatch(cmd, "([^;]+)") do
-            table.insert(tokens, s)
+while run do
+    -- Check if disk is present, wait for disk to be inserted
+    while not fs.exists("disk") do
+        if activeScreen ~= "titleScreen" then
+            activeScreen = "titleScreen"
+            cardLoaded = false
+            drawUI()
         end
 
-        -- Check if there are at least two arguments
-        if tokens[1] == nil or tokens[2] == nil then
-            term.setTextColor(colors.red)
-            print("Usage: [Header] [Contents] <Timeout>")
-            break
-        end
+        sleep(0.1)
+    end
 
-        local contents =  textutils.unserialize(tokens[2])
-        contents.uuid = uuid
-        contents.cardUUID = cardUUID
+    -- Load from card if not loaded before
+    if not cardLoaded then
+        local card = fs.open("/disk/.auth", "r")
+        uuid = card.readLine()
+        cardUUID = card.readLine()
+        card.close()
 
-        print("[" .. tokens[1] .. "]: " ..textutils.serialise(contents))
-        local ret = comlib.sendRequest(sModem, serverAddress, tokens[1], contents, tonumber(tokens[3]))
+        cardLoaded = true
+        onRedirectBtnClick("homeScreen")
+    end
 
-        term.setTextColor(colors.lightGray)
-        print(textutils.serialise(ret))
-    until true
+    -- Check for events
+    local eventData = table.pack(os.pullEventRaw())
+    local e = eventData[1]
+
+    -- Handle events
+    if e == "mouse_click" then
+        local x, y = eventData[3], eventData[4]
+        onClick(x, y)
+    end
+
+    -- Draw UI
+    drawUI()
 end
+
+-- Cleanup after exit
+term.clear()
+term.setBackgroundColor(colors.black)
+term.setTextColor(colors.white)
+term.setCursorPos(1, 1)
+
+uuid = nil
+cardUUID = nil

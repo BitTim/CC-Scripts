@@ -15,7 +15,7 @@ local M = {}
 M.Style = {}
 M.Style.__index = M.Style
 
-function M.Style:new(normalFG, normalBG, pressedFG, pressedBG, disabledFG, disabledBG)
+function M.Style:new(normalFG, normalBG, pressedFG, pressedBG, disabledFG, disabledBG, shadowColor)
     local style = {}
     setmetatable(style, M.Style)
 
@@ -25,6 +25,7 @@ function M.Style:new(normalFG, normalBG, pressedFG, pressedBG, disabledFG, disab
     if pressedBG == nil then pressedBG = colors.lime end
     if disabledFG == nil then disabledFG = colors.gray end
     if disabledBG == nil then disabledBG = colors.lightGray end
+    if shadowColor == nil then shadowColor = colors.black end
 
     style.normalFG = normalFG
     style.normalBG = normalBG
@@ -32,6 +33,7 @@ function M.Style:new(normalFG, normalBG, pressedFG, pressedBG, disabledFG, disab
     style.pressedBG = pressedBG
     style.disabledFG = disabledFG
     style.disabledBG = disabledBG
+    style.shadowColor = shadowColor
 
     return style
 end
@@ -80,7 +82,7 @@ function M.Label:draw()
 
     local fg, bg = self.style:getColors(false, false)
     local x, y = self.x, self.y
-    
+
     if self.parent then x, y = self.parent:convLocalToGlobal(x, y) end
 
     term.setTextColor(fg)
@@ -177,12 +179,13 @@ end
 M.Button = {}
 M.Button.__index = M.Button
 
-function M.Button:new(text, x, y, w, h, parent, action, args, toggle, style)
+function M.Button:new(text, x, y, w, h, parent, action, args, toggle, style, shadow)
     local btn = {}
     setmetatable(btn, M.Button)
 
-    if toggle == nil then toggle = false end
-    if style == nil then style = M.Style:new() end
+    toggle = toggle or false
+    style = style or M.Style:new()
+    shadow = shadow or false
 
     btn.text = text
     btn.x = x
@@ -191,11 +194,12 @@ function M.Button:new(text, x, y, w, h, parent, action, args, toggle, style)
     btn.h = h
     btn.parent = parent
     btn.style = style
-    
+
     btn.action = action
     btn.args = args
     btn.toggle = toggle
-    
+    btn.shadow = shadow
+
     btn.visible = true
     btn.pressed = false
     btn.disabled = false
@@ -336,7 +340,7 @@ function M.ProgressBar:draw()
     local numSolidFilled = math.floor(numFilled)
     local numPartlyFilled = 1
     if numFilled == math.floor(numFilled) then numPartlyFilled = 0 end
-    
+
     -- Get colors and position
     local fg, bg = self.style:getColors(false, false)
     local x, y = self.x, self.y
@@ -467,7 +471,7 @@ end
 
 -- Functon to add an element to the group
 function M.Group:add(element, id)
-	if id == nil or id == "" then return end  
+	if id == nil or id == "" then return end
 	if element == nil then return end
 
     element.parent = self
@@ -517,7 +521,7 @@ function M.PageHandler:new(pages, active)
 		active = 1
 	end
 	if active == nil then active = 1 end
-	
+
     pageHandler.pages = pages
 	pageHandler.active = active
 
@@ -562,7 +566,7 @@ end
 -- Function to move to previous page
 function M.PageHandler:prev()
 	if self.active - 1 < 1 then return end
-    
+
     self:get():hide()
 	self.active = self.active - 1
 
