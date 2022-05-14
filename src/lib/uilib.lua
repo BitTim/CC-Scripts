@@ -9,6 +9,9 @@
 --  Tim Anhalt (BitTim)
 -- ================================
 
+local bigtext = require("/lib/ThirdParty/bigtext")
+local numChars = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "." }
+
 local M = {}
 
 -- Class to hold Styles for different UI elements
@@ -65,17 +68,19 @@ end
 M.Label = {}
 M.Label.__index = M.Label
 
-function M.Label:new(text, x, y, parent, style)
+function M.Label:new(text, x, y, parent, style, big)
     local label = {}
     setmetatable(label, M.Label)
 
     if style == nil then style = M.Style:new() end
+    if big == nil then big = false end
 
     label.text = text
     label.x = x
     label.y = y
     label.parent = parent
     label.style = style
+    label.big = big
 
     label.visible = true
 
@@ -95,10 +100,20 @@ function M.Label:draw()
     term.setBackgroundColor(bg)
     term.setCursorPos(x, y)
 
-    term.write(self.text)
+    if not self.big then
+        term.write(self.text)
+    else
+        bigtext.bigWrite(self.text)
+    end
 
     term.setTextColor(colors.white)
     term.setBackgroundColor(colors.black)
+end
+
+-- Function to change text in the label
+function M.Label:changeText(text)
+    self.text = text
+    self:draw()
 end
 
 -- Function to show the label
@@ -355,6 +370,176 @@ end
 
 -- Function to hide the button
 function M.Button:hide()
+    self.visible = false
+    self.disabled = true
+end
+
+
+
+
+
+
+
+
+-- Class to hold properties of a text box
+M.TextBox = {}
+M.TextBox.__index = M.TextBox
+
+function M.TextBox:new(x, y, w, h, padding, parent, maxChars, numOnly, obfuscated, obfuscateChar, style)
+    padding = padding or 1
+    numOnly = numOnly or false
+    obfuscated = obfuscated or false
+    obfuscateChar = obfuscateChar or "\x07"
+    style = style or M.Style:new()
+
+    local maxPossibleChars = (w - padding * 2) * (h - padding * 2) - 1
+    if maxChars == nil or maxChars > maxPossibleChars then maxChars = maxPossibleChars end
+
+    local tb = {}
+    setmetatable(tb, M.TextBox)
+
+    tb.x = x
+    tb.y = y
+    tb.w = w
+    tb.h = h
+    tb.padding = padding
+    tb.parent = parent
+    tb.maxChars = maxChars
+    tb.numOnly = numOnly
+    tb.obfuscated = obfuscated
+    tb.obfuscateChar = obfuscateChar
+    tb.style = style
+
+    tb.text = ""
+    tb.visible = true
+    tb.disabled = false
+    tb.focused = false
+
+    tb.cursorPos = 0
+
+    return tb
+end
+
+-- Function to draw the textbox
+function M.TextBox:draw()
+    if self.visible == false then return end
+
+    local fg, bg = self.style:getColors(false, self.disabled)
+    local cfg, cbg = self.style:getColors(true, false)
+    local x, y = self.x, self.y
+    local w, h = self.w, self.h
+
+    if self.parent then x, y = self.parent:convLocalToGlobal(x, y) end
+
+    -- Draw background
+    paintutils.drawFilledBox(x, y, x + w - 1, y + h - 1, bg)
+
+    -- Add text
+    term.setTextColor(fg)
+
+    for i = 1, h - self.padding * 2 do
+        term.setCursorPos(x + self.padding, y + self.padding + (i - 1))
+
+        local line = string.sub(self.text, (i - 1) * (w - self.padding * 2) + 1, i * (w - self.padding * 2))
+        if line == "" then break end
+
+        if self.obfuscated == true then
+            term.write(string.rep(self.obfuscateChar, string.len(line)))
+        else
+            term.write(line)
+        end
+    end
+
+    -- Add cursor
+    term.setTextColor(cfg)
+    term.setBackgroundColor(cbg)
+
+    local cursorChar = string.sub(self.text, self.cursorPos + 1, self.cursorPos + 1)
+    if cursorChar == "" then cursorChar = " " end
+
+    local cx, cy = self.cursorPos % (w - self.padding * 2) + self.padding, math.floor(self.cursorPos / (w - self.padding * 2)) + self.padding
+    term.setCursorPos(x + cx, y + cy)
+    term.write(cursorChar)
+
+    -- Reset colors
+    term.setTextColor(colors.white)
+    term.setBackgroundColor(colors.black)
+end
+
+-- Function to handle key input events
+function M.TextBox:keyEvent(key)
+    local changed = false
+
+    -- Arrow key navigation
+    if key == keys.left and self.cursorPos > 0 then
+        self.cursorPos = self.cursorPos - 1
+        changed = true
+    end
+
+    if key == keys.right and self.cursorPos < #self.text then
+        self.cursorPos = self.cursorPos + 1
+        changed = true
+    end
+
+    -- Text deletion
+    if key == keys.backspace and self.cursorPos > 0 then
+        self.cursorPos = self.cursorPos - 1
+
+        local h1 = string.sub(self.text, 1, self.cursorPos)
+        local h2 = string.sub(self.text, self.cursorPos + 2)
+        self.text = h1 .. h2
+
+        changed = true
+    end
+
+    if key == keys.delete and self.cursorPos < #self.text then
+        local h1 = string.sub(self.text, 1, self.cursorPos)
+        local h2 = string.sub(self.text, self.cursorPos + 2)
+        self.text = h1 .. h2
+        changed = true
+    end
+
+    -- Redraw
+    if changed then self:draw() end
+end
+
+function M.TextBox:charEvent(char)
+    if #self.text >= self.maxChars then return end
+
+    if self.numOnly then
+        local charIsNum = false
+
+        for _, v in pairs(numChars) do
+            if v == char then charIsNum = true end
+        end
+
+        if charIsNum == false then return end
+    end
+
+    local h1 = string.sub(self.text, 1, self.cursorPos)
+    local h2 = string.sub(self.text, self.cursorPos + 1)
+    self.text = h1 .. char .. h2
+
+    self.cursorPos = self.cursorPos + 1
+
+    -- Redraw
+    self:draw()
+end
+
+-- Function to disable the text box
+function M.TextBox:disable(status)
+    if status == nil then status = not self.disabled end
+    self.disabled = status
+end
+
+-- Function to show the text box
+function M.TextBox:show()
+    self.visible = true
+    self.disabled = false
+end
+
+-- Function to hide the text box
+function M.TextBox:hide()
     self.visible = false
     self.disabled = true
 end
