@@ -155,6 +155,18 @@ end
 --  Request Handlers
 -- --------------------------------
 
+-- Get user data
+local function userData(s, p)
+    local uuid = p.contents.uuid
+
+    local data = {}
+    data.name = db[uuid].name
+    data.accountNum = db[uuid].accountNum
+
+    comlib.sendResponse(sModem, s, "USER", "OK", data)
+    loglib.log("USER", "Responded with " .. data.name .. " and " .. data.accountNum .. " to " .. s)
+end
+
 -- Get balance of user
 local function balance(s, p)
     local uuid = p.contents.uuid
@@ -368,7 +380,9 @@ while true do
     loglib.log("Main", "Received packet with header: " .. p.head)
 
     -- Check Packet header
-    if p.head == "BAL" then
+    if p.head == "USER" then
+        userData(s, p)
+    elseif p.head == "BAL" then
         balance(s, p)
     elseif p.head == "HIST" then
         history(s, p)

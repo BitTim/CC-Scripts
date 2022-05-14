@@ -43,10 +43,15 @@ local run = true
 local activeScreen = "titleScreen"
 local ui = {}
 local styles = {}
+local redraw = false
 
 local uuid = nil
 local cardUUID = nil
 local cardLoaded = false
+
+local userData = {}
+local balance = 0
+local history = {}
 
 
 
@@ -63,11 +68,34 @@ local function onRedirectBtnClick(targetID)
     ui[targetID]:show()
 
     activeScreen = targetID
+    redraw = true
 end
 
 local function onExitBtnClick()
     run = false
 end
+
+
+
+
+
+
+
+-- --------------------------------
+--  Classes
+-- --------------------------------
+
+-- Predefinitions
+
+local Transaction = {}
+Transaction.__index = Transaction
+
+-- Class to hold transaction data
+
+function Transaction:new(x, y, from, to, amount, time)
+    -- Todo create object
+end
+
 
 
 
@@ -144,6 +172,27 @@ local function createUI()
         uilib.Button:new("Back", 2, 2, 6, 3, accountInfo, onRedirectBtnClick, {"homeScreen"}, false, styles.btn, "\x7f", 1),
         "backBtn")
 
+    accountInfo:add(
+        uilib.Label:new("Balance: ", 12, 2, accountInfo, styles.bg),
+        "balTitleLabel")
+    accountInfo:add(
+        uilib.Label:new("", 12, 3, accountInfo, styles.bg, true),
+        "balLabel")
+
+    accountInfo:add(
+        uilib.Label:new("Name: ", 2, 7, accountInfo, styles.bg),
+        "nameTitleLabel")
+    accountInfo:add(
+        uilib.Label:new("", 8, 7, accountInfo, styles.bg),
+        "nameLabel")
+
+    accountInfo:add(
+        uilib.Label:new("Account Number: ", 26, 7, accountInfo, styles.bg),
+        "accountNumTitleLabel")
+    accountInfo:add(
+        uilib.Label:new("", 42, 7, accountInfo, styles.bg),
+        "accountNumLabel")
+
     ui["accountInfo"] = accountInfo
 
 
@@ -177,12 +226,53 @@ local function createUI()
     ui["changePIN"] = changePIN
 end
 
+local function updateUI()
+    ui["accountInfo"]:get("nameLabel").text = userData.name
+    ui["accountInfo"]:get("accountNumLabel").text = userData.accountNum
+    ui["accountInfo"]:get("balLabel").text = tostring(balance) .. "$"
+end
+
 local function drawUI()
     ui[activeScreen]:draw()
 end
 
 local function onClick(x, y)
     ui[activeScreen]:clickEvent(x, y)
+end
+
+local function updateData()
+    userData = comlib.sendRequest(sModem, serverAddress, "USER", { uuid = uuid }).contents
+    balance = comlib.sendRequest(sModem, serverAddress, "BAL", { uuid = uuid }).contents.balance
+    history = comlib.sendRequest(sModem, serverAddress, "HIST", { uuid = uuid }).contents.history
+
+    updateUI()
+end
+
+local function checkDisk()
+    -- Check if disk is present, wait for disk to be inserted
+    while not fs.exists("disk") do
+        if activeScreen ~= "titleScreen" then
+            activeScreen = "titleScreen"
+            cardLoaded = false
+            drawUI()
+        end
+
+        sleep(0.1)
+    end
+
+    -- Load from card if not loaded before
+    if not cardLoaded then
+        local card = fs.open("/disk/.auth", "r")
+        uuid = card.readLine()
+        cardUUID = card.readLine()
+        card.close()
+
+        updateData()
+
+        cardLoaded = true
+        onRedirectBtnClick("homeScreen")
+        drawUI()
+    end
 end
 
 
@@ -209,28 +299,8 @@ drawUI()
 
 --Main Loop
 while run do
-    -- Check if disk is present, wait for disk to be inserted
-    while not fs.exists("disk") do
-        if activeScreen ~= "titleScreen" then
-            activeScreen = "titleScreen"
-            cardLoaded = false
-            drawUI()
-        end
-
-        sleep(0.1)
-    end
-
-    -- Load from card if not loaded before
-    if not cardLoaded then
-        local card = fs.open("/disk/.auth", "r")
-        uuid = card.readLine()
-        cardUUID = card.readLine()
-        card.close()
-
-        cardLoaded = true
-        onRedirectBtnClick("homeScreen")
-        drawUI()
-    end
+    redraw = false
+    checkDisk()
 
     -- Check for events
     local eventData = table.pack(os.pullEventRaw())
@@ -243,7 +313,7 @@ while run do
     end
 
     -- Draw UI
-    drawUI()
+    if redraw then drawUI() end
 end
 
 -- Cleanup after exit
@@ -252,5 +322,8 @@ term.setBackgroundColor(colors.black)
 term.setTextColor(colors.white)
 term.setCursorPos(1, 1)
 
+userData = nil
+balance = nil
+history = nil
 uuid = nil
 cardUUID = nil
