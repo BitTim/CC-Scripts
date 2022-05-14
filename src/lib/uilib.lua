@@ -324,35 +324,39 @@ function M.Button:draw()
 end
 
 -- Function to check if a click event occured on the button
-function M.Button:clickEvent(ex, ey)
-    -- Check if button is visible and not disabled
-    if self.visible == false or self.disabled == true then return end
+function M.Button:event(eventBundle)
+    -- Handler for click events
+    if eventBundle[1] == "mouse_click" or eventBundle[1] == "monitor_touch" then
+        local ex, ey = eventBundle[3], eventBundle[4]
+        -- Check if button is visible and not disabled
+        if self.visible == false or self.disabled == true then return end
 
-    -- Check if clicked coordinate is within button
-    if ex >= self.x and ex < self.x + self.w  and ey >= self.y and ey < self.y + self.h then
-        -- Check if button needs to be toggled off
-        if self.toggle == true and self.pressed == true then
-            self.pressed = false
-            return
-        end
+        -- Check if clicked coordinate is within button
+        if ex >= self.x and ex < self.x + self.w  and ey >= self.y and ey < self.y + self.h then
+            -- Check if button needs to be toggled off
+            if self.toggle == true and self.pressed == true then
+                self.pressed = false
+                return
+            end
 
-        self.pressed = true
-        self:draw()
-
-        local ret = nil
-        if self.action and self.args then
-            ret = {self.action(table.unpack(self.args))}
-        end
-
-        -- Reset button if not in toggle mode
-        if self.toggle == false then
-            sleep(0.1)
-            self.pressed = false
-
+            self.pressed = true
             self:draw()
-        end
 
-        if ret then return ret end
+            local ret = nil
+            if self.action and self.args then
+                ret = {self.action(table.unpack(self.args))}
+            end
+
+            -- Reset button if not in toggle mode
+            if self.toggle == false then
+                sleep(0.1)
+                self.pressed = false
+
+                self:draw()
+            end
+
+            if ret then return ret end
+        end
     end
 end
 
@@ -451,79 +455,116 @@ function M.TextBox:draw()
     end
 
     -- Add cursor
-    term.setTextColor(cfg)
-    term.setBackgroundColor(cbg)
+    if self.focused then
+        term.setTextColor(cfg)
+        term.setBackgroundColor(cbg)
 
-    local cursorChar = string.sub(self.text, self.cursorPos + 1, self.cursorPos + 1)
-    if cursorChar == "" then cursorChar = " " end
+        local cursorChar = string.sub(self.text, self.cursorPos + 1, self.cursorPos + 1)
+        if cursorChar == "" then cursorChar = " " end
 
-    local cx, cy = self.cursorPos % (w - self.padding * 2) + self.padding, math.floor(self.cursorPos / (w - self.padding * 2)) + self.padding
-    term.setCursorPos(x + cx, y + cy)
-    term.write(cursorChar)
+        local cx, cy = self.cursorPos % (w - self.padding * 2) + self.padding, math.floor(self.cursorPos / (w - self.padding * 2)) + self.padding
+        term.setCursorPos(x + cx, y + cy)
+        term.write(cursorChar)
+    end
 
     -- Reset colors
     term.setTextColor(colors.white)
     term.setBackgroundColor(colors.black)
 end
 
--- Function to handle key input events
-function M.TextBox:keyEvent(key)
-    local changed = false
+-- Function to hanlde events
+function M.TextBox:event(eventBundle)
+    -- Handler for key event
+    if eventBundle[1] == "key" then
+        local key = eventBundle[2]
+        local changed = false
 
-    -- Arrow key navigation
-    if key == keys.left and self.cursorPos > 0 then
-        self.cursorPos = self.cursorPos - 1
-        changed = true
-    end
+        -- Check if textbox is focused, visible and not disabled
+        if self.focused == false or self.visible == false or self.disabled == true then return end
 
-    if key == keys.right and self.cursorPos < #self.text then
-        self.cursorPos = self.cursorPos + 1
-        changed = true
-    end
-
-    -- Text deletion
-    if key == keys.backspace and self.cursorPos > 0 then
-        self.cursorPos = self.cursorPos - 1
-
-        local h1 = string.sub(self.text, 1, self.cursorPos)
-        local h2 = string.sub(self.text, self.cursorPos + 2)
-        self.text = h1 .. h2
-
-        changed = true
-    end
-
-    if key == keys.delete and self.cursorPos < #self.text then
-        local h1 = string.sub(self.text, 1, self.cursorPos)
-        local h2 = string.sub(self.text, self.cursorPos + 2)
-        self.text = h1 .. h2
-        changed = true
-    end
-
-    -- Redraw
-    if changed then self:draw() end
-end
-
-function M.TextBox:charEvent(char)
-    if #self.text >= self.maxChars then return end
-
-    if self.numOnly then
-        local charIsNum = false
-
-        for _, v in pairs(numChars) do
-            if v == char then charIsNum = true end
+        -- Arrow key navigation
+        if key == keys.left and self.cursorPos > 0 then
+            self.cursorPos = self.cursorPos - 1
+            changed = true
         end
 
-        if charIsNum == false then return end
+        if key == keys.right and self.cursorPos < #self.text then
+            self.cursorPos = self.cursorPos + 1
+            changed = true
+        end
+
+        -- Text deletion
+        if key == keys.backspace and self.cursorPos > 0 then
+            self.cursorPos = self.cursorPos - 1
+
+            local h1 = string.sub(self.text, 1, self.cursorPos)
+            local h2 = string.sub(self.text, self.cursorPos + 2)
+            self.text = h1 .. h2
+
+            changed = true
+        end
+
+        if key == keys.delete and self.cursorPos < #self.text then
+            local h1 = string.sub(self.text, 1, self.cursorPos)
+            local h2 = string.sub(self.text, self.cursorPos + 2)
+            self.text = h1 .. h2
+            changed = true
+        end
+
+        -- Redraw
+        if changed then self:draw() end
     end
 
-    local h1 = string.sub(self.text, 1, self.cursorPos)
-    local h2 = string.sub(self.text, self.cursorPos + 1)
-    self.text = h1 .. char .. h2
 
-    self.cursorPos = self.cursorPos + 1
 
-    -- Redraw
-    self:draw()
+
+    -- Handler or char event
+    if eventBundle[1] == "char" then
+        local char = eventBundle[2]
+
+        -- Check if textbox is focused, visible and not disabled
+        if self.focused == false or self.visible == false or self.disabled == true then return end
+        if #self.text >= self.maxChars then return end
+
+        -- Filter chars when numOnly is enabled
+        if self.numOnly then
+            local charIsNum = false
+
+            for _, v in pairs(numChars) do
+                if v == char then charIsNum = true end
+            end
+
+            if charIsNum == false then return end
+        end
+
+        -- Insert char
+        local h1 = string.sub(self.text, 1, self.cursorPos)
+        local h2 = string.sub(self.text, self.cursorPos + 1)
+        self.text = h1 .. char .. h2
+
+        self.cursorPos = self.cursorPos + 1
+
+        -- Redraw
+        self:draw()
+    end
+
+
+
+
+    -- Handler for mouse click event
+    if eventBundle[1] == "mouse_click" then
+        local ex, ey = eventBundle[3], eventBundle[4]
+
+        -- Check if textbox is visible and not disabled
+        if self.visible == false or self.disabled == true then return end
+
+        -- Check if clicked coordinate is within textbox
+        if ex >= self.x and ex < self.x + self.w  and ey >= self.y and ey < self.y + self.h then
+            self:focus()
+        else
+            self:unfocus()
+        end
+    end
 end
 
 -- Function to disable the text box
@@ -542,6 +583,24 @@ end
 function M.TextBox:hide()
     self.visible = false
     self.disabled = true
+end
+
+-- Function to focus text box
+function M.TextBox:focus()
+    local focused = self.focused
+    self.focused = true
+
+    -- Redraw
+    if self.focused ~= focused then self:draw() end
+end
+
+-- Function to unfocus text box
+function M.TextBox:unfocus()
+    local focused = self.focused
+    self.focused = false
+
+    -- Redraw
+    if self.focused ~= focused then self:draw() end
 end
 
 
@@ -654,8 +713,6 @@ end
 
 
 
--- TODO: Write docs for PageHandler
-
 -- Class for handling groups of UI elements
 
 M.Group = {}
@@ -708,16 +765,27 @@ function M.Group:draw()
 end
 
 -- Function to pass the click event to all elemens
-function M.Group:clickEvent(ex, ey)
-    local x, y = self.x, self.y
-    if self.parent then x, y = self.parent:convGlobalToLocal(x, y) end
+function M.Group:event(eventBundle)
+    -- Manipulate coordinates for click events
+    if eventBundle[1] == "mouse_click" or eventBundle[1] == "monitor_touch" then
+        local x, y = self.x, self.y
+        local ex, ey = eventBundle[3], eventBundle[4]
+        if self.parent then x, y = self.parent:convGlobalToLocal(x, y) end
 
-    if ex < x and ey < y then return end
-    ex, ey = self:convGlobalToLocal(ex, ey)
+        if ex < x and ey < y then return end
+        ex, ey = self:convGlobalToLocal(ex, ey)
+        eventBundle[3], eventBundle[4] = ex, ey
 
+        for _, v in pairs(self.elements) do
+            -- Check if element has event function
+            if getmetatable(v).__index.event then v:event(eventBundle) end
+        end
+    end
+
+    -- Call event function on every child
     for _, v in pairs(self.elements) do
-        -- Check if element has clickEvent function
-        if getmetatable(v).__index.clickEvent then v:clickEvent(ex, ey) end
+        -- Check if element has event function
+        if getmetatable(v).__index.event then v:event(eventBundle) end
     end
 end
 
