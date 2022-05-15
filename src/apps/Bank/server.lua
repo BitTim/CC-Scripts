@@ -328,6 +328,34 @@ local function tax(s, p)
     comlib.sendResponse(sModem, s, "TAX", "OK", {})
 end
 
+local function changePin(s, p)
+    local uuid, cardUUID, hash, newHash = p.contents.uuid, p.contents.cardUUID, p.contents.hash, p.contents.newHash
+
+    -- Check if parameters are valid
+    if uuid == nil or cardUUID == nil or hash == nil or newHash == nil then
+        loglib.log("CHGPIN", "Failed, invalid parameters")
+        comlib.sendResponse(sModem, s, "CHGPIN", "FAIL", { reason = "INV_PARAMS" })
+    end
+
+    -- Check if card is valid
+    if db[uuid].cardUUID ~= cardUUID then
+        loglib.log("CHGPIN", "Failed, invalid card was used")
+        comlib.sendResponse(sModem, s, "CHGPIN", "FAIL", { reason = "INV_CARD" })
+    end
+
+    -- Check if hashes match
+    if db[uuid].hash ~= hash then
+        loglib.log("CHGPIN", "Failed, old pins dont match")
+        comlib.sendResponse(sModem, s, "CHGPIN", "FAIL", { reason = "WRONG_PIN" })
+        return
+    end
+
+    db[uuid].hash = newHash
+    updateDB()
+
+    comlib.sendResponse(sModem, s, "CHGPIN", "OK", {})
+end
+
 
 
 
@@ -390,5 +418,7 @@ while true do
         payment(s, p)
     elseif p.head == "TAX" then
         tax(s, p)
+    elseif p.head == "CHGPIN" then
+        changePin(s, p)
     end
 end

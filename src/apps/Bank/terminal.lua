@@ -12,6 +12,7 @@
 --  Dependencies
 -- --------------------------------
 
+os.loadAPI("/lib/ThirdParty/sha")
 local comlib = require("/lib/comlib")
 local dnslib = require("/lib/dnslib")
 local uilib = require("/lib/uilib")
@@ -32,6 +33,21 @@ local title = "Client"
 local version = "v2.0"
 local screenSize = { w = 51, h = 19 }
 
+local failStrings = {
+    ACC_NOT_EXIST = "EC01: Account does not exist",
+    INV_PARAMS = "EC02: Something went wrong",
+    TO_NOT_EXISTS = "EC03: Recipiant does not exist",
+    NO_AUTH = "EC04: Something went wrong",
+    WRONG_PIN = "EC05: Wrong Pin",
+    INV_CARD = "EC06: Invalid card was used",
+    AMNT_LEQ_ZERO = "EC07: Amount cannot be below 1$",
+    BAL_TOO_LOW = "EC08: Balance too low",
+    REPEAT_NOT_MATCH = "EC09: New pin and repeated new pin must match",
+    PIN_SHORT = "EC10: Pin needs to have 6 digits",
+    NO_RES = "EC11: No response from server",
+    DEFAULT = "EC12: Something went wrong"
+}
+
 -- --------------------------------
 --  Internal Properties
 -- --------------------------------
@@ -40,7 +56,10 @@ local sModem = nil
 local serverAddress = nil
 local run = true
 
+local resStatus = ""
+
 local activeScreen = "titleScreen"
+local prevScreen = "titleScreen"
 local ui = {}
 local styles = {}
 local redraw = false
@@ -60,15 +79,92 @@ local history = {}
 
 
 -- --------------------------------
+--  Local functions (Cannot be defined later)
+-- --------------------------------
+
+local function updateResponseUI(status, errorCode)
+    local message = ""
+    resStatus = status
+
+    if status == "OK" then
+        message = "Success!"
+        ui["resScreen"]:get("resLabel").style = styles.success
+    else
+        if errorCode == nil then errorCode = "" end
+        message = failStrings[errorCode]
+
+        if message == nil or message == "" then
+            message = failStrings["DEFAULT"]
+        end
+
+        ui["resScreen"]:get("resLabel").style = styles.error
+    end
+
+    ui["resScreen"]:get("resLabel").text = message
+end
+
+
+
+
+
+
+
+
+-- --------------------------------
 --  Click events
 -- --------------------------------
 
 local function onRedirectBtnClick(targetID)
-    ui[activeScreen]:hide()
-    ui[targetID]:show()
+    if targetID ~= activeScreen then
+        ui[activeScreen]:hide()
+        ui[targetID]:show()
 
-    activeScreen = targetID
-    redraw = true
+        prevScreen = activeScreen
+        activeScreen = targetID
+
+        redraw = true
+    end
+end
+
+local function onPinChangeBtnClick()
+    local cPin = ui["changePin"]:get("currentPinTextBox").text
+    local nPin = ui["changePin"]:get("newPinTextBox").text
+    local rnPin = ui["changePin"]:get("repeatNewPinTextBox").text
+
+    -- Check if Pin is long enough
+    if #nPin < 6 then
+        -- Redirect to resScreen
+        updateResponseUI("FAIL", "PIN_SHORT")
+        onRedirectBtnClick("resScreen")
+        return
+    end
+
+    -- Check it new pin and repeated new pin are equal
+    if nPin ~= rnPin then
+        -- Redirect to resScreen
+        updateResponseUI("FAIL", "REPEAT_NOT_MATCH")
+        onRedirectBtnClick("resScreen")
+        return
+    end
+
+    local res = comlib.sendRequest(sModem, serverAddress, "CHGPIN", { uuid = uuid, cardUUID = cardUUID, hash = sha.sha256(cPin), newHash = sha.sha256(nPin) })
+    if res == -1 then res = {status = "FAIL", contents = { reason = "NO_RES" }} end
+
+    updateResponseUI(res.status, res.contents.reason)
+    onRedirectBtnClick("resScreen")
+end
+
+local function onResponseOkClick()
+    local targetID = ""
+
+    if resStatus == "FAIL" then
+        targetID = prevScreen
+    else
+        ui[prevScreen]:reset()
+        targetID = "homeScreen"
+    end
+
+    onRedirectBtnClick(targetID)
 end
 
 local function onExitBtnClick()
@@ -109,10 +205,18 @@ end
 
 local function createStyles()
     local bgStyle = uilib.Style:new(colors.black, colors.white)
+    local bgShadedStyle = uilib.Style:new(colors.lightGray, colors.white)
     local btnStyle = uilib.Style:new(colors.white, colors.red, colors.white, colors.gray, colors.lightGray, colors.gray, colors.lightGray, colors.white)
+    local tbStyle = uilib.Style:new(colors.black, colors.lightGray, colors.white, colors.red, colors.gray, colors.lightGray)
+    local successStyle = uilib.Style:new(colors.green, colors.white)
+    local errorStyle = uilib.Style:new(colors.red, colors.white)
 
     styles.bg = bgStyle
+    styles.shadedBG = bgShadedStyle
     styles.btn = btnStyle
+    styles.tb = tbStyle
+    styles.success = successStyle
+    styles.error = errorStyle
 end
 
 local function createUI()
@@ -129,6 +233,30 @@ local function createUI()
     )
 
     ui["titleScreen"] = titleScreen
+
+
+
+
+    -- Response Screen
+    local resScreen = uilib.Group:new(1, 1, nil, "bg", {})
+    resScreen:add(
+        uilib.Panel:new(" ", 1, 1, screenSize.w, screenSize.h, resScreen, styles.shadedBG),
+        "bg")
+
+    resScreen:add(
+    -- Logo needs to be 49x7 in size
+        uilib.Image:new("/assets/logo.nfp", 2, 2, resScreen),
+        "logoImage")
+
+    resScreen:add(
+        uilib.Label:new("", 2, 11, resScreen, styles.error, false),
+        "resLabel")
+
+    resScreen:add(
+        uilib.Button:new("Confirm", 41, 15, 9, 3, resScreen, onResponseOkClick, {}, false, styles.btn, "\x7f", 1),
+        "confirmBtn")
+
+    ui["resScreen"] = resScreen
 
 
 
@@ -151,8 +279,8 @@ local function createUI()
         uilib.Button:new("Send Funds", 4, 15, 18, 3, homeScreen, onRedirectBtnClick, {"sendFunds"}, false, styles.btn, "\x7f", 1),
         "sendFundsBtn")
     homeScreen:add(
-        uilib.Button:new("Change PIN", 31, 10, 18, 3, homeScreen, onRedirectBtnClick, {"changePIN"}, false, styles.btn, "\x7f", 1),
-        "changePINBtn")
+        uilib.Button:new("Change Pin", 31, 10, 18, 3, homeScreen, onRedirectBtnClick, {"changePin"}, false, styles.btn, "\x7f", 1),
+        "changePinBtn")
     homeScreen:add(
         uilib.Button:new("Exit", 31, 15, 18, 3, homeScreen, onExitBtnClick, {}, false, styles.btn, "\x7f", 1),
         "exitBtn")
@@ -213,20 +341,49 @@ local function createUI()
 
 
 
-    -- Change PIN
-    local changePIN = uilib.Group:new(1, 1, nil, "bg", {})
-    changePIN:add(
-        uilib.Panel:new(" ", 1, 1, screenSize.w, screenSize.h, changePIN, styles.bg),
+    -- Change Pin
+    local changePin = uilib.Group:new(1, 1, nil, "bg", {})
+    changePin:add(
+        uilib.Panel:new(" ", 1, 1, screenSize.w, screenSize.h, changePin, styles.bg),
         "bg")
 
-        changePIN:add(
-        uilib.Button:new("Back", 2, 2, 6, 3, changePIN, onRedirectBtnClick, {"homeScreen"}, false, styles.btn, "\x7f", 1),
+    changePin:add(
+        uilib.Button:new("Back", 2, 2, 6, 3, changePin, onRedirectBtnClick, {"homeScreen"}, false, styles.btn, "\x7f", 1),
         "backBtn")
 
-    ui["changePIN"] = changePIN
+    changePin:add(
+        uilib.Label:new("Change Pin", 12, 3, changePin, styles.bg, true),
+        "changePinTitleLabel")
+
+    changePin:add(
+        uilib.Label:new("Current Pin:", 2, 9, changePin, styles.bg, false),
+        "currentPinTitleLabel")
+    changePin:add(
+        uilib.TextBox:new(18, 8, 9, 3, 1, changePin, 6, true, true, nil, styles.tb),
+        "currentPinTextBox")
+
+    changePin:add(
+        uilib.Label:new("New Pin:", 2, 13, changePin, styles.bg, false),
+        "newPinTitleLabel")
+    changePin:add(
+        uilib.TextBox:new(18, 12, 9, 3, 1, changePin, 6, true, true, nil, styles.tb),
+        "newPinTextBox")
+
+    changePin:add(
+        uilib.Label:new("Repeat new Pin:", 2, 17, chanhePin, styles.bg, false),
+        "repeatNewPinTitleLabel")
+    changePin:add(
+        uilib.TextBox:new(18, 16, 9, 3, 1, changePin, 6, true, true, nil, styles.tb),
+        "repeatNewPinTextBox")
+
+    changePin:add(
+        uilib.Button:new("Confirm", 41, 15, 9, 3, changePin, onPinChangeBtnClick, {}, false, styles.btn, "\x7f", 1),
+        "confirmBtn")
+
+    ui["changePin"] = changePin
 end
 
-local function updateUI()
+local function updateAccountUI()
     ui["accountInfo"]:get("nameLabel").text = userData.name
     ui["accountInfo"]:get("accountNumLabel").text = userData.accountNum
     ui["accountInfo"]:get("balLabel").text = tostring(balance) .. "$"
@@ -236,8 +393,8 @@ local function drawUI()
     ui[activeScreen]:draw()
 end
 
-local function onClick(x, y)
-    ui[activeScreen]:clickEvent(x, y)
+local function events(e)
+    ui[activeScreen]:event(e)
 end
 
 local function updateData()
@@ -245,7 +402,7 @@ local function updateData()
     balance = comlib.sendRequest(sModem, serverAddress, "BAL", { uuid = uuid }).contents.balance
     history = comlib.sendRequest(sModem, serverAddress, "HIST", { uuid = uuid }).contents.history
 
-    updateUI()
+    updateAccountUI()
 end
 
 local function checkDisk()
@@ -302,15 +459,9 @@ while run do
     redraw = false
     checkDisk()
 
-    -- Check for events
-    local eventData = table.pack(os.pullEventRaw())
-    local e = eventData[1]
-
     -- Handle events
-    if e == "mouse_click" then
-        local x, y = eventData[3], eventData[4]
-        onClick(x, y)
-    end
+    local e = table.pack(os.pullEventRaw())
+    events(e)
 
     -- Draw UI
     if redraw then drawUI() end
