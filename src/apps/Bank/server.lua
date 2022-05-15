@@ -167,6 +167,20 @@ local function userData(s, p)
     loglib.log("USER", "Responded with " .. data.name .. " and " .. data.accountNum .. " to " .. s)
 end
 
+-- Get name of user based on account number
+local function name(s, p)
+    local accountNum = p.contents.accountNum
+    local uuid = getUUIDfromAccountNum(accountNum)
+    local accountName = "N/A"
+
+    if uuid ~= nil then
+        accountName = db[uuid].name
+    end
+
+    comlib.sendResponse(sModem, s, "NAME", "OK", { name = accountName })
+    loglib.log("NAME", "Responded with " .. accountName .. " to " .. s)
+end
+
 -- Get balance of user
 local function balance(s, p)
     local uuid = p.contents.uuid
@@ -226,13 +240,13 @@ local function payment(s, p)
         return
     end
 
-    if amount > authThreshold and hash == nil then
+    if amount >= authThreshold and hash == nil then
         loglib.log("PAY", "Failed, amount above threshold and no auth")
         comlib.sendResponse(sModem, s, "PAY", "FAIL", { reason = "NO_AUTH" })
         return
     end
 
-    if amount > authThreshold and hash ~= db[uuid].hash then
+    if amount >= authThreshold and hash ~= db[uuid].hash then
         loglib.log("PAY", "Failed, wrong PIN")
         comlib.sendResponse(sModem, s, "PAY", "FAIL", { reason = "WRONG_PIN" })
         return
@@ -412,6 +426,8 @@ while true do
     -- Check Packet header
     if p.head == "USER" then
         userData(s, p)
+    elseif p.head == "NAME" then
+        name(s, p)
     elseif p.head == "BAL" then
         balance(s, p)
     elseif p.head == "HIST" then
