@@ -350,9 +350,11 @@ local function changePin(s, p)
         return
     end
 
+    loglib.log("CHGPIN", "Changing Pin")
     db[uuid].hash = newHash
     updateDB()
 
+    loglib.log("CHGPIN", "Finished")
     comlib.sendResponse(sModem, s, "CHGPIN", "OK", {})
 end
 
