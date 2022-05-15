@@ -461,7 +461,7 @@ function M.TextBox:draw()
 
         local cursorChar = string.sub(self.text, self.cursorPos + 1, self.cursorPos + 1)
         if cursorChar == "" then cursorChar = " " end
-        if self.obfuscated then cursorChar = self.obfuscateChar end
+        if self.obfuscated and cursorChar ~= " " then cursorChar = self.obfuscateChar end
 
         local cx, cy = self.cursorPos % (w - self.padding * 2) + self.padding, math.floor(self.cursorPos / (w - self.padding * 2)) + self.padding
         term.setCursorPos(x + cx, y + cy)
