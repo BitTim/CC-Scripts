@@ -604,6 +604,12 @@ function M.TextBox:unfocus()
     if self.focused ~= focused then self:draw() end
 end
 
+-- Function to reset values
+function M.TextBox:reset()
+    self.text = ""
+    self.cursorPos = 0
+end
+
 
 
 
@@ -776,11 +782,6 @@ function M.Group:event(eventBundle)
         if ex < x and ey < y then return end
         ex, ey = self:convGlobalToLocal(ex, ey)
         eventBundle[3], eventBundle[4] = ex, ey
-
-        for _, v in pairs(self.elements) do
-            -- Check if element has event function
-            if getmetatable(v).__index.event then v:event(eventBundle) end
-        end
     end
 
     -- Call event function on every child
@@ -819,6 +820,14 @@ end
 -- Function to make group invisible
 function M.Group:hide()
 	self.visible = false
+end
+
+-- Function to reset all elements in group
+function M.Group:reset()
+    for _, v in pairs(self.elements) do
+        -- Check if element has event function
+        if getmetatable(v).__index.reset then v:reset() end
+    end
 end
 
 
