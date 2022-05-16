@@ -179,6 +179,39 @@ local function userData(s, p)
     loglib.log("USER", "Responded with " .. data.name .. " and " .. data.accountNum .. " to " .. s)
 end
 
+-- Authenticate user
+local function auth(s, p)
+    local uuid, cardUUID, hash = p.contents.uuid, p.contents.cardUUID, p.contents.hash
+
+    -- Check all fail states
+    if uuid == nil or cardUUID == nil or hash == nil then
+        loglib.log("AUTH", "Fail, invalid parameters")
+        comlib.sendResponse(sModem, s, "AUTH", "FAIL", { reason = "INV_PARAMS" })
+        return
+    end
+
+    if db[uuid] == nil then
+        loglib.log("AUTH", "Fail, account not existing")
+        comlib.sendResponse(sModem, s, "AUTH", "FAIL", { reason = "ACC_NOT_EXIST" })
+        return
+    end
+
+    if hash ~= db[uuid].hash then
+        loglib.log("AUTH", "Failed, wrong pin")
+        comlib.sendResponse(sModem, s, "AUTH", "FAIL", { reason = "WRONG_PIN" })
+        return
+    end
+
+    if cardUUID == nil or cardUUID ~= db[uuid].cardUUID then
+        loglib.log("AUTH", "Failed, invalid card was used")
+        comlib.sendResponse(sModem, s, "AUTH", "FAIL", { reason = "INV_CARD" })
+        return
+    end
+
+    loglib.log("AUTH", "Authenticated user " .. db[uuid].name)
+    comlib.sendResponse(sModem, s, "AUTH", "OK", {})
+end
+
 -- Get name of user based on account number
 local function name(s, p)
     local accountNum = p.contents.accountNum
@@ -444,6 +477,8 @@ while true do
     -- Check Packet header
     if p.head == "USER" then
         userData(s, p)
+    elseif p.head == "AUTH" then
+        auth(s, p)
     elseif p.head == "NAME" then
         name(s, p)
     elseif p.head == "BAL" then

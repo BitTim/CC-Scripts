@@ -23,6 +23,7 @@ local timelib = require("/lib/timelib")
 -- --------------------------------
 
 local modemSide = "top"
+local diskSide = "bottom"
 local serverDomain = "bank.test"
 local cardBrandName = "Omnicard"
 local authThreshold = 100
@@ -175,6 +176,22 @@ local function onRedirectBtnClick(targetID)
 	end
 end
 
+local function onExitBtnClick()
+	disk.eject(diskSide)
+
+	userData = nil
+	balance = nil
+	history = nil
+	uuid = nil
+	cardUUID = nil
+
+	for _, v in pairs(ui) do
+		v:reset()
+	end
+
+	redraw = true
+end
+
 local function onPinChangeBtnClick()
 	local cPin = ui["changePin"]:get("currentPinTextBox").text
 	local nPin = ui["changePin"]:get("newPinTextBox").text
@@ -267,10 +284,29 @@ local function onAuthConfirmClicked()
 		refetchUserData = true
 		return
 	elseif prevScreen == "titleScreen" then
-		-- TODO
-		-- Send Auth request to server
-		-- Redirect to homeScreen
+		-- Send AUTH packet to server
+		local res = comlib.sendRequest(sModem, serverAddress, "AUTH", { hash = hash, uuid = uuid, cardUUID = cardUUID })
+		if res == -1 then res = {status = "FAIL", contents = { reason = "NO_RES" }} end
+
+		if res.status == "FAIL" then
+			updateResponseUI(res.status, res.contents.reason)
+			onRedirectBtnClick("resScreen")
+			return
+		end
+
+		onRedirectBtnClick("homeScreen")
 	end
+end
+
+local function onAutchCancelClicked()
+	ui["authScreen"]:reset()
+
+	if prevScreen == "titleScreen" then
+		onExitBtnClick()
+		return
+	end
+
+	onRedirectBtnClick(prevScreen)
 end
 
 local function onResponseOkClick()
@@ -338,10 +374,6 @@ local function onTransactionsDownClicked()
 
 	ui["transactions"]:get("pageNumLabel").text = string.format("%03d", pages.active)
 	redraw = true
-end
-
-local function onExitBtnClick()
-	run = false
 end
 
 
@@ -457,16 +489,28 @@ end
 local function createUI()
 	createStyles()
 
-	-- Title screen
+	-- Title Screen
 	local titleScreen = uilib.Group:new(1, 1, nil, "bg", {})
 	titleScreen:add(
-		uilib.Panel:new(" ", 1, 1, screenSize.w, screenSize.h, titleScreen, styles.bg),
+		uilib.Panel:new("\x7f", 1, 1, screenSize.w, screenSize.h, titleScreen, styles.shadedBG),
 		"bg")
 
-	titleScreen:add(
-		uilib.Label:new("[TMP] Please insert your " .. cardBrandName, 2, 2, titleScreen, styles.bg)
-	)
+	local titleScreenContent = uilib.Group:new(3, 3, nil, "bg", {})
 
+	titleScreenContent:add(
+		uilib.Panel:new(" ", 1, 1, screenSize.w - 4, screenSize.h - 4, onAuthConfirmClicked, styles.bg),
+		"bg")
+
+	titleScreenContent:add(
+	-- Logo needs to be 49x7 in size
+		uilib.Image:new("/assets/logo.nfp", 0, 2, titleScreen),
+		"logoImage")
+
+	titleScreenContent:add(
+		uilib.Label:new("", 5, 12, titleScreen, styles.bg, false),
+		"textLabel")
+
+	titleScreen:add(titleScreenContent, "content")
 	ui["titleScreen"] = titleScreen
 
 
@@ -496,6 +540,10 @@ local function createUI()
 	authScreenContent:add(
 		uilib.TextBox:new(10, 11, 9, 3, 1, authScreenContent, 6, true, true, nil, styles.tb),
 		"pinTextBox")
+
+	authScreenContent:add(
+		uilib.Button:new("Cancel", 25, 11, 8, 3, authScreenContent, onAutchCancelClicked, {}, false, styles.btn, "\x7f", 1),
+		"cancelBtn")
 
 	authScreenContent:add(
 		uilib.Button:new("Confirm", 35, 11, 9, 3, authScreenContent, onAuthConfirmClicked, {}, false, styles.btn, "\x7f", 1),
@@ -873,6 +921,8 @@ local function checkDisk()
 	while not fs.exists("disk") do
 		if activeScreen ~= "titleScreen" then
 			activeScreen = "titleScreen"
+			ui["titleScreen"]:get("content"):get("textLabel").text = "Please insert your" .. cardBrandName
+			ui["titleScreen"]:draw()
 			cardLoaded = false
 			drawUI()
 		end
@@ -882,6 +932,9 @@ local function checkDisk()
 
 	-- Load from card if not loaded before
 	if not cardLoaded then
+		ui["titleScreen"]:get("content"):get("textLabel").text = "Loading data from server, please wait"
+		ui["titleScreen"]:draw()
+
 		local card = fs.open("/disk/.auth", "r")
 		uuid = card.readLine()
 		cardUUID = card.readLine()
@@ -890,8 +943,12 @@ local function checkDisk()
 		updateData()
 
 		cardLoaded = true
-		onRedirectBtnClick("homeScreen")
+		onRedirectBtnClick("authScreen")
 		drawUI()
+	end
+
+	if activeScreen == "titleScreen" then
+		onRedirectBtnClick("authScreen")
 	end
 end
 
@@ -934,20 +991,4 @@ while run do
 
 	-- Draw UI
 	if redraw then drawUI() end
-end
-
--- Cleanup after exit
-term.clear()
-term.setBackgroundColor(colors.black)
-term.setTextColor(colors.white)
-term.setCursorPos(1, 1)
-
-userData = nil
-balance = nil
-history = nil
-uuid = nil
-cardUUID = nil
-
-for _, v in pairs(ui) do
-	v:reset()
 end
