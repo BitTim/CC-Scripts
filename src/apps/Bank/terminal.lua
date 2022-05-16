@@ -34,9 +34,10 @@ local authThreshold = 100
 local title = "Client"
 local version = "v2.0"
 local screenSize = { w = 51, h = 19 }
+local descH, descW, descPad = 2, 36, 0
+local transactionsPerPage = 2
 
 local successString = "Operation successful!"
-
 local failStrings = {
 	ACC_NOT_EXIST = "EC01: Account does not exist",
 	INV_PARAMS = "EC02: Something went wrong",
@@ -49,7 +50,8 @@ local failStrings = {
 	REPEAT_NOT_MATCH = "EC09: New pins dont match",
 	PIN_SHORT = "EC10: Pin requires 6 digits",
 	NO_RES = "EC11: Server not responding",
-	DEFAULT = "EC12: Something went wrong"
+	TO_IS_FROM = "EC12: Can't send to yourself",
+	DEFAULT = "EC13: Something went wrong"
 }
 
 -- --------------------------------
@@ -120,8 +122,6 @@ local function updateConfirmSendFundsUI()
 	amountDecimals = string.format("%.02f", tonumber(amountDecimals) / 100)
 	amountDecimals = string.sub(amountDecimals, 3)
 
-	local descH, descW, descPad = ui["sendFunds"]:get("descriptionTextBox").h, ui["sendFunds"]:get("descriptionTextBox").w, ui["sendFunds"]:get("descriptionTextBox").padding
-
 	local descLines = {}
 	for i = 1, descH - descPad * 2 do
         local line = string.sub(description, (i - 1) * (descW - descPad * 2) + 1, i * (descW - descPad * 2))
@@ -143,7 +143,6 @@ local function updateConfirmSendFundsUI()
 
 	ui["confirmSendFunds"]:get("descriptionLine1Label").text = descLines[1]
 	ui["confirmSendFunds"]:get("descriptionLine2Label").text = descLines[2]
-	ui["confirmSendFunds"]:get("descriptionLine3Label").text = descLines[3]
 
 	ui["confirmSendFunds"]:get("recipiantLabel").text = recipiant
 	ui["confirmSendFunds"]:get("recipiantNameLabel").text = "(" .. recipiantName .. ")"
@@ -233,6 +232,7 @@ local function onConfirmSendFundsConfirmClicked()
 
 	local bundle = { uuid = uuid, cardUUID = cardUUID, desc = description, to = recipiant, amount = amount, time = time, date = date }
 	local res = comlib.sendRequest(sModem, serverAddress, "PAY", bundle)
+
 	if res == -1 then res = {status = "FAIL", contents = { reason = "NO_RES" }} end
 
 	updateResponseUI(res.status, res.contents.reason)
@@ -286,6 +286,60 @@ local function onResponseOkClick()
 	onRedirectBtnClick(targetID)
 end
 
+local function onTransactionsUpClicked()
+	local upBtn = ui["transactions"]:get("upBtn")
+	local downBtn = ui["transactions"]:get("downBtn")
+	local pages = ui["transactions"]:get("pages")
+
+	pages:prev()
+
+    if pages.active <= 1 then
+        if #pages.pages > 1 then
+			downBtn.disabled = false
+		else
+			downBtn.disabled = true
+		end
+
+        upBtn.disabled = true
+    elseif pages.active >= #pages.pages then
+        upBtn.disabled = false
+        downBtn.disabled = true
+    else
+        upBtn.disabled = false
+        downBtn.disabled = false
+    end
+
+	ui["transactions"]:get("pageNumLabel").text = string.format("%03d", pages.active)
+	redraw = true
+end
+
+local function onTransactionsDownClicked()
+	local upBtn = ui["transactions"]:get("upBtn")
+	local downBtn = ui["transactions"]:get("downBtn")
+	local pages = ui["transactions"]:get("pages")
+
+	pages:next()
+
+    if pages.active <= 1 then
+        if #pages.pages > 1 then
+			downBtn.disabled = false
+		else
+			downBtn.disabled = true
+		end
+
+        upBtn.disabled = true
+    elseif pages.active >= #pages.pages then
+        upBtn.disabled = false
+        downBtn.disabled = true
+    else
+        upBtn.disabled = false
+        downBtn.disabled = false
+    end
+
+	ui["transactions"]:get("pageNumLabel").text = string.format("%03d", pages.active)
+	redraw = true
+end
+
 local function onExitBtnClick()
 	run = false
 end
@@ -306,9 +360,65 @@ local Transaction = {}
 Transaction.__index = Transaction
 
 -- Class to hold transaction data
+function Transaction:new(x, y, parent, from, to, amount, desc, time, date)
+	local transact = {}
+	setmetatable(transact, Transaction)
 
-function Transaction:new(x, y, from, to, amount, time)
-	-- Todo create object
+	local personUUID = ""
+	local amountStyle = nil
+
+	if from == uuid then
+		personUUID = to
+		amountStyle = styles.error
+		amount = -amount
+	else
+		personUUID = from
+		amountStyle = styles.success
+	end
+
+	local res = comlib.sendRequest(sModem, serverAddress, "USER", { uuid = personUUID })
+	if res == -1 then res = { contents = { name = "N/A", accountNum = "N/A" }} end
+
+	-- Split description into lines
+	local descLines = {}
+	for i = 1, descH - descPad * 2 do
+        local line = string.sub(desc, (i - 1) * (descW - descPad * 2) + 1, i * (descW - descPad * 2))
+        if line == "" then
+			descLines[i] = ""
+		else
+			descLines[i] = line
+		end
+    end
+
+	local descLineW = descW - descPad * 2
+
+
+
+	local transactUI = uilib.Group:new(x, y, parent)
+
+	transactUI:add(
+		uilib.Label:new(res.contents.name .. " (" .. res.contents.accountNum .. ")", 1, 1, transactUI, styles.bg),
+		"personLabel")
+
+	for i = 1, #descLines do
+		transactUI:add(
+			uilib.Label:new(descLines[i], 1, 2 + (i - 1), transactUI, styles.desc),
+			"descLine" .. i .. "Label")
+	end
+
+	transactUI:add(
+		uilib.Label:new(amount .. "$", descLineW + 2, 1, transactUI, amountStyle),
+		"amountLabel")
+
+	transactUI:add(
+		uilib.Label:new(time, descLineW + 2, 2, transactUI, styles.time),
+		"timeLabel")
+	transactUI:add(
+		uilib.Label:new(date, descLineW + 2, 3, transactUI, styles.time),
+		"dateLabel")
+
+	transact.ui = transactUI
+	return transact
 end
 
 
@@ -330,6 +440,8 @@ local function createStyles()
 	local successStyle = uilib.Style:new(colors.green, colors.white)
 	local errorStyle = uilib.Style:new(colors.red, colors.white)
 	local inputStyle = uilib.Style:new(colors.blue, colors.white)
+	local descStyle = uilib.Style:new(colors.gray, colors.white)
+	local timeStyle = uilib.Style:new(colors.lightGray, colors.white)
 
 	styles.bg = bgStyle
 	styles.shadedBG = bgShadedStyle
@@ -338,6 +450,8 @@ local function createStyles()
 	styles.success = successStyle
 	styles.error = errorStyle
 	styles.input = inputStyle
+	styles.desc = descStyle
+	styles.time = timeStyle
 end
 
 local function createUI()
@@ -484,6 +598,22 @@ local function createUI()
 		uilib.Label:new("", 42, 7, transactions, styles.bg),
 		"accountNumLabel")
 
+	transactions:add(
+		uilib.PageHandler:new(),
+		"pages")
+
+	transactions:add(
+		uilib.Button:new("\x1e", 21, 18, 3, 1, transactions, onTransactionsUpClicked, {}, false, styles.btn, nil, 0),
+		"upBtn")
+
+	transactions:add(
+		uilib.Label:new("", 25, 18, transactions, styles.bg),
+		"pageNumLabel")
+
+	transactions:add(
+		uilib.Button:new("\x1f", 29, 18, 3, 1, transactions, onTransactionsDownClicked, {}, false, styles.btn, nil, 0),
+		"downBtn")
+
 	ui["transactions"] = transactions
 
 
@@ -521,33 +651,33 @@ local function createUI()
 		"accountNumLabel")
 
 	sendFunds:add(
-		uilib.Label:new("Description:", 2, 11, sendFunds, styles.bg, false),
-		"descriptionTitleLable")
-	sendFunds:add(
-		uilib.TextBox:new(15, 11, 36, 3, 0, sendFunds, 100, false, false, nil, styles.tb),
-		"descriptionTextBox")
-
-	sendFunds:add(
-		uilib.Label:new("Recipiant:", 2, 15, sendFunds, styles.bg, false),
+		uilib.Label:new("Recipiant:", 2, 10, sendFunds, styles.bg, false),
 		"recipiantTitleLabel")
 	sendFunds:add(
-		uilib.TextBox:new(15, 15, 5, 1, 0, sendFunds, 4, true, false, nil, styles.tb),
+		uilib.TextBox:new(15, 10, 5, 1, 0, sendFunds, 4, true, false, nil, styles.tb),
 		"recipiantTextBox")
 
 	sendFunds:add(
-		uilib.Label:new("Amount:", 2, 17, sendFunds, styles.bg, false),
+		uilib.Label:new("Description:", 2, 12, sendFunds, styles.bg, false),
+		"descriptionTitleLable")
+	sendFunds:add(
+		uilib.TextBox:new(15, 12, descW, descH, descPad, sendFunds, 71, false, false, nil, styles.tb),
+		"descriptionTextBox")
+
+	sendFunds:add(
+		uilib.Label:new("Amount:", 2, 15, sendFunds, styles.bg, false),
 		"amountTitleLabel")
 	sendFunds:add(
-		uilib.TextBox:new(15, 17, 7, 1, 0, sendFunds, 6, true, false, nil, styles.tb),
+		uilib.TextBox:new(15, 15, 7, 1, 0, sendFunds, 6, true, false, nil, styles.tb),
 		"amountTextBox")
 	sendFunds:add(
-		uilib.Label:new(".", 22, 17, sendFunds, styles.bg, false),
+		uilib.Label:new(".", 22, 15, sendFunds, styles.bg, false),
 		"amountDecimalPointLabel")
 	sendFunds:add(
-		uilib.TextBox:new(23, 17, 3, 1, 0, sendFunds, 2, true, false, nil, styles.tb),
+		uilib.TextBox:new(23, 15, 3, 1, 0, sendFunds, 2, true, false, nil, styles.tb),
 		"amountDecimalsTextBox")
 	sendFunds:add(
-		uilib.Label:new("$", 27, 17, sendFunds, styles.bg, false),
+		uilib.Label:new("$", 27, 15, sendFunds, styles.bg, false),
 		"amountCurrencyLabel")
 
 	sendFunds:add(
@@ -591,42 +721,39 @@ local function createUI()
 		"accountNumLabel")
 
 	confirmSendFunds:add(
-		uilib.Label:new("Description:", 2, 11, confirmSendFunds, styles.bg, false),
-		"descriptionTitleLable")
-	confirmSendFunds:add(
-		uilib.Label:new("", 15, 11, confirmSendFunds, styles.input, false),
-		"descriptionLine1Label")
-	confirmSendFunds:add(
-		uilib.Label:new("", 15, 12, confirmSendFunds, styles.input, false),
-		"descriptionLine2Label")
-	confirmSendFunds:add(
-		uilib.Label:new("", 15, 13, confirmSendFunds, styles.input, false),
-		"descriptionLine3Label")
-
-	confirmSendFunds:add(
-		uilib.Label:new("Recipiant:", 2, 15, confirmSendFunds, styles.bg, false),
+		uilib.Label:new("Recipiant:", 2, 10, confirmSendFunds, styles.bg, false),
 		"recipiantTitleLabel")
 	confirmSendFunds:add(
-		uilib.Label:new("", 15, 15, confirmSendFunds, styles.input, false),
+		uilib.Label:new("", 15, 10, confirmSendFunds, styles.input, false),
 		"recipiantLabel")
 	confirmSendFunds:add(
-		uilib.Label:new("", 20, 15, confirmSendFunds, styles.input, false),
+		uilib.Label:new("", 20, 10, confirmSendFunds, styles.input, false),
 		"recipiantNameLabel")
 
 	confirmSendFunds:add(
-		uilib.Label:new("Amount:", 2, 17, confirmSendFunds, styles.bg, false),
+		uilib.Label:new("Description:", 2, 12, confirmSendFunds, styles.bg, false),
+		"descriptionTitleLable")
+	confirmSendFunds:add(
+		uilib.Label:new("", 15, 12, confirmSendFunds, styles.input, false),
+		"descriptionLine1Label")
+	confirmSendFunds:add(
+		uilib.Label:new("", 15, 13, confirmSendFunds, styles.input, false),
+		"descriptionLine2Label")
+
+	confirmSendFunds:add(
+		uilib.Label:new("Amount:", 2, 15, confirmSendFunds, styles.bg, false),
 		"amountTitleLabel")
 	confirmSendFunds:add(
-		uilib.Label:new("", 15, 17, confirmSendFunds, styles.input, false),
+		uilib.Label:new("", 15, 15, confirmSendFunds, styles.input, false),
 		"amountLabel")
 	confirmSendFunds:add(
-		uilib.Label:new(".", 22, 17, confirmSendFunds, styles.bg, false),
+		uilib.Label:new(".", 22, 15, confirmSendFunds, styles.bg, false),
 		"amountDecimalPointLabel")
 	confirmSendFunds:add(
-		uilib.Label:new("", 23, 17, confirmSendFunds, styles.input, false),
+		uilib.Label:new("", 23, 15, confirmSendFunds, styles.input, false),
 		"amountDecimalsLabel")
 	confirmSendFunds:add(
-		uilib.Label:new("$", 27, 17, confirmSendFunds, styles.bg, false),
+		uilib.Label:new("$", 27, 15, confirmSendFunds, styles.bg, false),
 		"amountCurrencyLabel")
 
 	confirmSendFunds:add(
@@ -694,6 +821,36 @@ local function updateAccountUI()
 	ui["confirmSendFunds"]:get("balLabel").text = string.format("%.02f", balance) .. "$"
 end
 
+local function updateTransactionsUI()
+	local pages = ui["transactions"]:get("pages")
+	while pages.active > 1 do pages:prev() end
+	pages:clear()
+
+	local totalIndex = 1
+	local page = 1
+	local pageIndex = 1
+
+	for i = 1, #history do
+		if pages:get(page) == nil then
+			local pageGroup = uilib.Group:new(2, 10, pages)
+			pages:add(pageGroup, page)
+		end
+
+		local transaction = Transaction:new(1, (pageIndex - 1) * 4 + 1, pages:get(page), history[i].from, history[i].to, history[i].amount, history[i].desc, history[i].time, history[i].date).ui
+		pages:get(page):add(transaction, "transaction" .. totalIndex)
+
+		pageIndex = pageIndex + 1
+		totalIndex = totalIndex + 1
+
+		if pageIndex > transactionsPerPage then
+			page = page + 1
+			pageIndex = 1
+		end
+	end
+
+	onTransactionsUpClicked()
+end
+
 local function drawUI()
 	ui[activeScreen]:draw()
 end
@@ -708,6 +865,7 @@ local function updateData()
 	history = comlib.sendRequest(sModem, serverAddress, "HIST", { uuid = uuid }).contents.history
 
 	updateAccountUI()
+	updateTransactionsUI()
 end
 
 local function checkDisk()

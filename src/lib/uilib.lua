@@ -747,6 +747,8 @@ function M.Group:convLocalToGlobal(x, y)
     x = x + self.x - 1
     y = y + self.y - 1
 
+    if self.parent and self.parent.convLocalToGlobal ~= nil then x, y = self.parent:convLocalToGlobal(x, y) end
+
     return x, y
 end
 
@@ -754,6 +756,8 @@ end
 function M.Group:convGlobalToLocal(x, y)
     x = x - self.x + 1
     y = y - self.y + 1
+
+    if self.parent and self.parent.convGlobalToLocal ~= nil then x, y = self.parent:convGlobalToLocal(x, y) end
 
     return x, y
 end
@@ -902,6 +906,13 @@ function M.PageHandler:prev()
 
     self:get():show()
 	self:draw()
+end
+
+-- Function to clear all pages
+function M.PageHandler:clear()
+    for i = 1, #self.pages do
+        self:remove(i)
+    end
 end
 
 return M

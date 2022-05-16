@@ -118,8 +118,8 @@ local function setBalance(uuid, balance)
 end
 
 local function addTransactionEntry(fromUUID, toUUID, amount, desc, time, date)
-    table.insert(db[fromUUID].transactions, { from = fromUUID, to = toUUID, amount = amount, desc = desc, time = time, date = date })
-    table.insert(db[toUUID].transactions, { from = fromUUID, to = toUUID, amount = amount, desc = desc, time = time, date = date })
+    table.insert(db[fromUUID].transactions, 1, { from = fromUUID, to = toUUID, amount = amount, desc = desc, time = time, date = date })
+    table.insert(db[toUUID].transactions, 1, { from = fromUUID, to = toUUID, amount = amount, desc = desc, time = time, date = date })
     updateDB()
 end
 
@@ -158,6 +158,18 @@ end
 -- Get user data
 local function userData(s, p)
     local uuid = p.contents.uuid
+
+    if uuid == nil or uuid == "" then
+        loglib.log("USER", "Failed, invalid parameters")
+        comlib.sendResponse(sModem, s, "USER", "FAIL", { reason = "INV_PARAMS" })
+        return
+    end
+
+    if db[uuid] == nil then
+        loglib.log("USER", "Failed, account does not exist")
+        comlib.sendResponse(sModem, s, "USER", "FAILE", { reason = "ACC_NOT_EXIST" })
+        return
+    end
 
     local data = {}
     data.name = db[uuid].name
@@ -240,6 +252,12 @@ local function payment(s, p)
         return
     end
 
+    if toUUID == uuid then
+        loglib.log("PAY", "Failed, recipiant cannot be sender")
+        comlib.sendResponse(sModem, s, "PAY", "FAIL", { reason = "TO_IS_FROM" })
+        return
+    end
+
     if amount >= authThreshold and hash == nil then
         loglib.log("PAY", "Failed, amount above threshold and no auth")
         comlib.sendResponse(sModem, s, "PAY", "FAIL", { reason = "NO_AUTH" })
@@ -272,7 +290,7 @@ local function payment(s, p)
 
     -- Transfer funds
     setBalance(uuid, getBalance(uuid) - amount)
-    setBalance(toUUID, getBalance(uuid) + amount)
+    setBalance(toUUID, getBalance(toUUID) + amount)
     loglib.log("PAY", "Transferred " .. tostring(amount) .. "$ from " .. db[uuid].name .. " to " .. db[toUUID].name .. " with description: " .. desc)
 
     addTransactionEntry(uuid, toUUID, amount, desc, time, date)
