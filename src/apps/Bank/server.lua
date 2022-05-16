@@ -13,6 +13,7 @@
 -- --------------------------------
 
 os.loadAPI("lib/ThirdParty/aeslua")
+local timelib = require("/lib/timelib")
 local comlib = require("/lib/comlib")
 local loglib = require("/lib/loglib")
 
