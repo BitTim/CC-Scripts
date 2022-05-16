@@ -80,6 +80,8 @@ local userData = {}
 local balance = 0
 local history = {}
 
+local nameCache = {}
+
 
 
 
@@ -134,13 +136,17 @@ local function updateConfirmSendFundsUI()
     end
 
 	local recipiantName = ""
-	local res = comlib.sendRequest(sModem, serverAddress, "NAME", { accountNum = recipiant })
+	if nameCache[recipiant] == nil then
+		local res = comlib.sendRequest(sModem, serverAddress, "NAME", { accountNum = recipiant })
 
-	if res == -1 then
-		recipiantName = "N/A"
-	else
-		recipiantName = res.contents.name
+		if res == -1 then
+			nameCache[recipiant] = "N/A"
+		else
+			nameCache[recipiant] = res.contents.name
+		end
 	end
+
+	recipiantName = nameCache[recipiant]
 
 	ui["confirmSendFunds"]:get("descriptionLine1Label").text = descLines[1]
 	ui["confirmSendFunds"]:get("descriptionLine2Label").text = descLines[2]
