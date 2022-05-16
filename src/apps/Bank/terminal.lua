@@ -80,7 +80,7 @@ local userData = {}
 local balance = 0
 local history = {}
 
-local nameCache = {}
+local userCache = {}
 
 
 
@@ -136,17 +136,13 @@ local function updateConfirmSendFundsUI()
     end
 
 	local recipiantName = ""
-	if nameCache[recipiant] == nil then
-		local res = comlib.sendRequest(sModem, serverAddress, "NAME", { accountNum = recipiant })
+	local res = comlib.sendRequest(sModem, serverAddress, "NAME", { accountNum = recipiant })
 
-		if res == -1 then
-			nameCache[recipiant] = "N/A"
-		else
-			nameCache[recipiant] = res.contents.name
-		end
+	if res == -1 then
+		recipiantName = "N/A"
+	else
+		recipiantName = res.contents.name
 	end
-
-	recipiantName = nameCache[recipiant]
 
 	ui["confirmSendFunds"]:get("descriptionLine1Label").text = descLines[1]
 	ui["confirmSendFunds"]:get("descriptionLine2Label").text = descLines[2]
@@ -412,8 +408,14 @@ function Transaction:new(x, y, parent, from, to, amount, desc, time, date)
 		amountStyle = styles.success
 	end
 
-	local res = comlib.sendRequest(sModem, serverAddress, "USER", { uuid = personUUID })
-	if res == -1 or res == nil then res = { contents = { name = "N/A", accountNum = "N/A" }} end
+	if userCache[personUUID] == nil then
+		local res = comlib.sendRequest(sModem, serverAddress, "USER", { uuid = personUUID })
+		if res == -1 or res == nil then res = { contents = { name = "N/A", accountNum = "N/A" }} end
+
+		userCache[personUUID] = res.contents
+	end
+
+	local user = userCache[personUUID]
 
 	-- Split description into lines
 	local descLines = {}
@@ -433,7 +435,7 @@ function Transaction:new(x, y, parent, from, to, amount, desc, time, date)
 	local transactUI = uilib.Group:new(x, y, parent)
 
 	transactUI:add(
-		uilib.Label:new(res.contents.name .. " (" .. res.contents.accountNum .. ")", 1, 1, transactUI, styles.bg),
+		uilib.Label:new(user.name .. " (" .. user.accountNum .. ")", 1, 1, transactUI, styles.bg),
 		"personLabel")
 
 	for i = 1, #descLines do
