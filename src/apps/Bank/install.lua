@@ -82,6 +82,12 @@ elseif installType == "taxServer" then
 elseif installType == "terminal" then
 	print("Downloading terminal")
 	shell.run("wget", "https://raw.githubusercontent.com/BitTim/CC-Scripts/master/src/apps/Bank/terminal.lua", "startup.lua")
+
+	print("Creating folder for assets")
+	shell.run("mkdir", "assets")
+
+	print("Downloading logo asset")
+	shell.run("wget", "https://raw.githubusercontent.com/BitTim/CC-Scripts/master/src/apps/Bank/assets/logo.nfp", "assets/logo.nfp")
 end
 
 term.setTextColor(colors.green)
