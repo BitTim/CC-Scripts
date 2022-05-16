@@ -404,7 +404,7 @@ local function tax(s, p)
         transactionObj.date = date
 
         -- Insert transaction into history
-        table.insert(1, db[uuid].transactions, transactionObj)
+        table.insert(db[uuid].transactions, 1, transactionObj)
     end
 
     loglib.log("TAX", "Finished")
@@ -454,6 +454,7 @@ end
 -- --------------------------------
 
 math.randomseed(os.time())
+timelib.init("Europe/Berlin")
 
 sModem = comlib.open(modemSide)                                 -- Create Secure Modem
 loglib.init(title, version, 0.5)                                -- Initialize LogLib
