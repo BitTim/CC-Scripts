@@ -923,7 +923,7 @@ local function checkDisk()
 	while not fs.exists("disk/.auth") do
 		if activeScreen ~= "titleScreen" then
 			onRedirectBtnClick("titleScreen")
-			ui["titleScreen"]:get("content"):get("textLabel").text = "Please insert your" .. cardBrandName
+			ui["titleScreen"]:get("content"):get("textLabel").text = "Please insert your " .. cardBrandName
 			cardLoaded = false
 			drawUI()
 		end
