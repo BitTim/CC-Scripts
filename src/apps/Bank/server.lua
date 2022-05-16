@@ -395,8 +395,15 @@ local function tax(s, p)
             transactionObj.to = tmp
         end
 
+        local dt = timelib.DateTime:new()
+	    local time = dt:formatTimeEU()
+	    local date = dt:formatDateEU()
+
+        transactionObj.time = time
+        transactionObj.date = date
+
         -- Insert transaction into history
-        table.insert(db[uuid].transactions, transactionObj)
+        table.insert(1, db[uuid].transactions, transactionObj)
     end
 
     loglib.log("TAX", "Finished")

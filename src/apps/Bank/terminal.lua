@@ -253,7 +253,7 @@ local function onConfirmSendFundsConfirmClicked()
 	updateResponseUI(res.status, res.contents.reason)
 	onRedirectBtnClick("resScreen")
 
-	refetchUserData = true
+	if res.status == "OK" then refetchUserData = true end
 end
 
 local function onAuthConfirmClicked()
@@ -279,7 +279,7 @@ local function onAuthConfirmClicked()
 		updateResponseUI(res.status, res.contents.reason)
 		onRedirectBtnClick("resScreen")
 
-		refetchUserData = true
+		if res.status == "OK" then refetchUserData = true end
 		return
 	elseif prevScreen == "titleScreen" then
 		-- Send AUTH packet to server
