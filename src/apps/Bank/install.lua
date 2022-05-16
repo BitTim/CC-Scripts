@@ -41,6 +41,9 @@ shell.run("mkdir", "lib/ThridParty")
 print("Downloading aeslua")
 shell.run("wget", "https://raw.githubusercontent.com/BitTim/CC-Scripts/master/src/lib/ThirdParty/aeslua", "lib/ThirdParty/aeslua")
 
+print("Downloading bigtext")
+shell.run("wget", "https://raw.githubusercontent.com/BitTim/CC-Scripts/master/src/lib/ThirdParty/biftext.lua", "lib/ThirdParty/bigtext.lua")
+
 print("Downloading ecnet")
 shell.run("wget", "https://raw.githubusercontent.com/BitTim/CC-Scripts/master/src/lib/ThirdParty/ecnet.lua", "lib/ThirdParty/ecnet.lua")
 
@@ -58,6 +61,9 @@ shell.run("wget", "https://raw.githubusercontent.com/BitTim/CC-Scripts/master/sr
 
 print("Downloading loglib")
 shell.run("wget", "https://raw.githubusercontent.com/BitTim/CC-Scripts/master/src/lib/loglib.lua", "lib/loglib.lua")
+
+print("Downloading timelib")
+shell.run("wget", "https://raw.githubusercontent.com/BitTim/CC-Scripts/master/src/lib/timelib.lua", "lib/timelib.lua")
 
 print("Downloading uilib")
 shell.run("wget", "https://raw.githubusercontent.com/BitTim/CC-Scripts/master/src/lib/uilib.lua", "lib/uilib.lua")
