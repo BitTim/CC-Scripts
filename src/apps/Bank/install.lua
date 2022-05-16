@@ -36,7 +36,7 @@ print("Creating folder for libraries")
 shell.run("mkdir", "lib")
 
 print("Creating folder for third party libraries")
-shell.run("mkdir", "lib/ThridParty")
+shell.run("mkdir", "lib/ThirdParty")
 
 print("Downloading aeslua")
 shell.run("wget", "https://raw.githubusercontent.com/BitTim/CC-Scripts/master/src/lib/ThirdParty/aeslua", "lib/ThirdParty/aeslua")
