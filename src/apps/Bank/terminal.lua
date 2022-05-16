@@ -928,6 +928,7 @@ local function checkDisk()
 			drawUI()
 		end
 
+		if not fs.exists("disk/.auth") then disk.eject(diskSide) end
 		sleep(0.1)
 	end
 
