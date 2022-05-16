@@ -920,7 +920,7 @@ end
 
 local function checkDisk()
 	-- Check if disk is present, wait for disk to be inserted
-	while not fs.exists("disk") do
+	while not fs.exists("disk/.auth") do
 		if activeScreen ~= "titleScreen" then
 			onRedirectBtnClick("titleScreen")
 			ui["titleScreen"]:get("content"):get("textLabel").text = "Please insert your" .. cardBrandName
@@ -928,7 +928,6 @@ local function checkDisk()
 			drawUI()
 		end
 
-		if not fs.exists("disk/.auth") then disk.eject(diskSide) end
 		sleep(0.1)
 	end
 
