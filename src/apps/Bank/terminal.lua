@@ -188,8 +188,6 @@ local function onExitBtnClick()
 	for _, v in pairs(ui) do
 		v:reset()
 	end
-
-	redraw = true
 end
 
 local function onPinChangeBtnClick()
@@ -507,7 +505,7 @@ local function createUI()
 		"logoImage")
 
 	titleScreenContent:add(
-		uilib.Label:new("", 5, 12, titleScreen, styles.bg, false),
+		uilib.Label:new("Please insert your " .. cardBrandName, 5, 12, titleScreen, styles.bg, false),
 		"textLabel")
 
 	titleScreen:add(titleScreenContent, "content")
@@ -896,6 +894,10 @@ local function updateTransactionsUI()
 		end
 	end
 
+	if pages:get(1) == nil then
+		pages:add(uilib.Group:new(2, 10, pages), 1)
+	end
+
 	onTransactionsUpClicked()
 end
 
@@ -920,9 +922,8 @@ local function checkDisk()
 	-- Check if disk is present, wait for disk to be inserted
 	while not fs.exists("disk") do
 		if activeScreen ~= "titleScreen" then
-			activeScreen = "titleScreen"
+			onRedirectBtnClick("titleScreen")
 			ui["titleScreen"]:get("content"):get("textLabel").text = "Please insert your" .. cardBrandName
-			ui["titleScreen"]:draw()
 			cardLoaded = false
 			drawUI()
 		end
@@ -933,7 +934,7 @@ local function checkDisk()
 	-- Load from card if not loaded before
 	if not cardLoaded then
 		ui["titleScreen"]:get("content"):get("textLabel").text = "Loading data from server, please wait"
-		ui["titleScreen"]:draw()
+		drawUI()
 
 		local card = fs.open("/disk/.auth", "r")
 		uuid = card.readLine()
