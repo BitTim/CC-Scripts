@@ -16,6 +16,7 @@ os.loadAPI("/lib/ThirdParty/sha")
 local comlib = require("/lib/comlib")
 local dnslib = require("/lib/dnslib")
 local uilib = require("/lib/uilib")
+local timelib = require("/lib/timelib")
 
 -- --------------------------------
 --  Configurable Properties
@@ -226,9 +227,11 @@ local function onConfirmSendFundsConfirmClicked()
 	local description = ui["sendFunds"]:get("descriptionTextBox").text
 	local recipiant = ui["sendFunds"]:get("recipiantTextBox").text
 
-	-- TODO: Add timestamp to transactions
+	local dt = timelib.DateTime:new()
+	local time = dt:formatTimeEU()
+	local date = dt:formatDateEU()
 
-	local bundle = { uuid = uuid, cardUUID = cardUUID, desc = description, to = recipiant, amount = amount }
+	local bundle = { uuid = uuid, cardUUID = cardUUID, desc = description, to = recipiant, amount = amount, time = time, date = date }
 	local res = comlib.sendRequest(sModem, serverAddress, "PAY", bundle)
 	if res == -1 then res = {status = "FAIL", contents = { reason = "NO_RES" }} end
 
@@ -250,7 +253,11 @@ local function onAuthConfirmClicked()
 		local description = ui["sendFunds"]:get("descriptionTextBox").text
 		local recipiant = ui["sendFunds"]:get("recipiantTextBox").text
 
-		local bundle = { uuid = uuid, cardUUID = cardUUID, desc = description, to = recipiant, amount = amount, hash = hash }
+		local dt = timelib.DateTime:new()
+		local time = dt:formatTimeEU()
+		local date = dt:formatDateEU()
+
+		local bundle = { uuid = uuid, cardUUID = cardUUID, desc = description, to = recipiant, amount = amount, hash = hash, time = time, date = date }
 		local res = comlib.sendRequest(sModem, serverAddress, "PAY", bundle)
 		if res == -1 then res = {status = "FAIL", contents = { reason = "NO_RES" }} end
 
@@ -741,6 +748,7 @@ end
 --  Main Program
 -- --------------------------------
 
+timelib.init("Europe/Berlin")									-- Initialize TimeLib
 sModem = comlib.open(modemSide)                                 -- Create Secure Modem
 if dnslib.init(sModem) == -1 then                               -- Initialize DNSLib
 	print("Could not connect to DNS Server")

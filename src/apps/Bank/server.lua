@@ -117,9 +117,9 @@ local function setBalance(uuid, balance)
     updateDB()
 end
 
-local function addTransactionEntry(fromUUID, toUUID, amount, desc)
-    table.insert(db[fromUUID].transactions, { from = fromUUID, to = toUUID, amount = amount, desc = desc })
-    table.insert(db[toUUID].transactions, { from = fromUUID, to = toUUID, amount = amount, desc = desc })
+local function addTransactionEntry(fromUUID, toUUID, amount, desc, time, date)
+    table.insert(db[fromUUID].transactions, { from = fromUUID, to = toUUID, amount = amount, desc = desc, time = time, date = date })
+    table.insert(db[toUUID].transactions, { from = fromUUID, to = toUUID, amount = amount, desc = desc, time = time, date = date })
     updateDB()
 end
 
@@ -215,7 +215,7 @@ end
 
 -- Move money from one account to another
 local function payment(s, p)
-    local uuid, to, amount, desc, cardUUID, hash = p.contents.uuid, p.contents.to, p.contents.amount, p.contents.desc, p.contents.cardUUID, p.contents.hash
+    local uuid, to, amount, desc, cardUUID, hash, time, date = p.contents.uuid, p.contents.to, p.contents.amount, p.contents.desc, p.contents.cardUUID, p.contents.hash, p.contents.time, p.contents.date
     local toUUID = getUUIDfromAccountNum(to);
 
     amount = tonumber(amount)
@@ -275,7 +275,7 @@ local function payment(s, p)
     setBalance(toUUID, getBalance(uuid) + amount)
     loglib.log("PAY", "Transferred " .. tostring(amount) .. "$ from " .. db[uuid].name .. " to " .. db[toUUID].name .. " with description: " .. desc)
 
-    addTransactionEntry(uuid, toUUID, amount, desc)
+    addTransactionEntry(uuid, toUUID, amount, desc, time, date)
     loglib.log("PAY", "Added transaction entry")
 
     -- Send response
