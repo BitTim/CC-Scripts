@@ -407,7 +407,7 @@ function Transaction:new(x, y, parent, from, to, amount, desc, time, date)
 	end
 
 	local res = comlib.sendRequest(sModem, serverAddress, "USER", { uuid = personUUID })
-	if res == -1 then res = { contents = { name = "N/A", accountNum = "N/A" }} end
+	if res == -1 or res == nil then res = { contents = { name = "N/A", accountNum = "N/A" }} end
 
 	-- Split description into lines
 	local descLines = {}

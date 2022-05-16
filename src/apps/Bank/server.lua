@@ -159,6 +159,16 @@ end
 local function userData(s, p)
     local uuid = p.contents.uuid
 
+    if uuid == "TAX" then
+        local data = {}
+        data.name = "TAX"
+        data.accountNum = ""
+
+        comlib.sendResponse(sModem, s, "USER", "OK", data)
+        loglib.log("USER", "Responded with " .. data.name .. " and " .. data.accountNum .. " to " .. s)
+        return
+    end
+
     if uuid == nil or uuid == "" then
         loglib.log("USER", "Failed, invalid parameters")
         comlib.sendResponse(sModem, s, "USER", "FAIL", { reason = "INV_PARAMS" })
