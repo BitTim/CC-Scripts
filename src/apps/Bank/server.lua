@@ -388,7 +388,7 @@ local function tax(s, p)
         transactionObj.from = "TAX"
         transactionObj.to = uuid
         transactionObj.amount = math.abs(amount)
-        transactionObj.desc = "[Taxes] Percentage: " .. percentage .. "%, Taken: " .. taken .. "$, Given: " .. amountPerAcc + leftover .. "$"
+        transactionObj.desc = "[Taxes] Percentage: " .. string.format("%.04f", percentage) .. "%,        Taken: " .. taken .. "$, Given: " .. amountPerAcc + leftover .. "$"
 
         if amount < 0 then
             local tmp = transactionObj.from
