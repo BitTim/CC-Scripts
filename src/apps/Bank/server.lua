@@ -136,7 +136,7 @@ local function getTaxPercentage(uuid)
     else
         local dx = totalAssets - (2 * normalPerAcc)
         local dy = taxPercentageMax - taxPercentageDouble
-        return (dy / dx) * (x - (2 * normalPerAcc)) + taxPercentageDouble
+        return (dy / dx) * (bal - (2 * normalPerAcc)) + taxPercentageDouble
     end
 end
 
