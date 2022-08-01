@@ -28,8 +28,8 @@ local maxSpeed = 256
 --  Configurable Properties
 -- --------------------------------
 
-local farmNames = {"Potato", "Wood"}
-local motorIDs = {"electric_motor1", "electric_motor2"}
+local farmNames = {"Wood", "Potato"}
+local motorIDs = {"electric_motor_1", "electric_motor_2"}
 local storageIDs = {"sophisticatedstorage:barrel_0", "sophisticatedstorage:barrel_1"}
 local probeInterval = 5
 
@@ -78,28 +78,32 @@ function Farm:new(x, y, title, motorPeripheral, storagePeripheral)
 	farm.motorPeripheral = motorPeripheral
 	farm.storagePeripheral = storagePeripheral
 
-	farm.ui = farm:createUI(x, y, title, storagePeripheral.size())
+	farm.ui = farm:createUI(farm, x, y, title, storagePeripheral.size())
 
 	farm.storage = 0
 	farm.speed = minSpeed
 	farm.active = false
+
+ return farm
 end
 
-function Farm:cretaeUI(instance, x, y, title, maxSlots)
+function Farm:createUI(instance, x, y, title, maxSlots)
 	local ui = uilib.Group:new(x, y, nil, "bgPanel")
 	ui:add(uilib.Panel:new(" ", 1, 1, 17, 12, nil, styles.bg), "bgPanel")
 
 	ui:add(uilib.Label:new(title, 2, 2, nil, styles.title), "title")
 	ui:add(uilib.Label:new("", 2, 3, nil, styles.label), "motorState")
-	ui:add(uilib.Button:new("Toggle", 2, 4, 14, 1, nil, Farm.buttonEvent, {instance}, false, styles.button), "toggleButton")
+	ui:add(uilib.Button:new("Toggle", 2, 4, 13, 1, nil, Farm.toggleEvent, {instance}, false, styles.button), "toggleButton")
 
-	ui:add(uilib.Label:new("Storage:", 2, 5, nil, styles.label), "storageLabel")
-	ui:add(uilib.ProgressBar:new(0, maxSlots, 0, 2, 6, nil, false, false, styles.progress), "storageProgress")
+	ui:add(uilib.Label:new("Storage:", 2, 6, nil, styles.label), "storageLabel")
+	ui:add(uilib.ProgressBar:new(0, maxSlots, 0, 2, 7, 13, 1, nil, false, false, styles.progress), "storageProgress")
 
-	ui:add(uilib.Label:new("Speed:", 2, 8, nil, styles.label), "speedLabel")
-	ui:add(uilib.Button:new("<", 2, 7, 3, 3, nil, Farm.less, {instance}, false), "lessBtn")
-	ui:add(uilib.Label:new("", 5, 7, nil, styles.label), "speedValue")
-	ui:add(uilib.Button:new(">", 14, 7, 3, 3, nil, Farm.more, {instance}, false), "moreBtn")
+	ui:add(uilib.Label:new("Speed:", 2, 9, nil, styles.label), "speedLabel")
+	ui:add(uilib.Button:new("<", 2, 10, 3, 1, nil, Farm.less, {instance}, false), "lessBtn")
+	ui:add(uilib.Label:new("", 6, 10, nil, styles.label), "speedValue")
+	ui:add(uilib.Button:new(">", 12, 10, 3, 1, nil, Farm.more, {instance}, false), "moreBtn")
+
+ return ui
 end
 
 function Farm:update(storage, speed, active)
@@ -123,15 +127,15 @@ function Farm:update(storage, speed, active)
 	if storagePercent > 0.6 then progressStyle = styles.warn
 	elseif storagePercent > 0.8 then progressStyle = styles.crit end
 
-	self.ui:get("motorState"):setText(active and "Active" or "Inactive")
-	self.ui:get("motorState"):setStyle(active and styles.ok or styles.crit)
+	self.ui:get("motorState").text = (active and "Active" or "Inactive")
+	self.ui:get("motorState").style = (active and styles.okLabel or styles.critLabel)
 
-	self.ui:get("toggleButton"):setText(active and "Stop" or "Start")
+	self.ui:get("toggleButton").text = (active and "Stop" or "Start")
 
-	self.ui:get("storageProgress"):setValue(storage)
-	self.ui:get("storageProgress"):setStyle(progressStyle)
+	self.ui:get("storageProgress").val = storage
+	self.ui:get("storageProgress").style = progressStyle
 
-	self.ui:get("speedValue"):setText(speed)
+	self.ui:get("speedValue").text = speed
 
 	local lessHandled, moreHandled = false, false
 
@@ -170,7 +174,7 @@ function Farm:less()
 	self:update(nil, speed)
 end
 
-function Farm:buttonEvent()
+function Farm:toggleEvent()
 	local active = not self.active
 	self:update(nil, nil, active)
 end
@@ -192,6 +196,9 @@ local function createStyles()
 	local labelStyle = uilib.Style:new(colors.white, colors.black)
 	local btnStyle = uilib.Style:new(colors.white, colors.gray, colors.white, colors.lime, colors.gray, colors.lightGray, colors.lightGray, colors.white)
 
+ local okLabelStyle = uilib.Style:new(colors.lime, colors.black)
+ local critLabelStyle = uilib.Style:new(colors.red, colors.black)
+
 	local okStyle = uilib.Style:new(colors.lime, colors.gray)
 	local warnStyle = uilib.Style:new(colors.yellow, colors.gray)
 	local critStyle = uilib.Style:new(colors.red, colors.gray)
@@ -200,6 +207,9 @@ local function createStyles()
 	styles.title = titleStyle
 	styles.label = labelStyle
 	styles.btn = btnStyle
+
+ styles.okLabel = okLabelStyle
+ styles.critLabel = critLabelStyle
 
 	styles.ok = okStyle
 	styles.warn = warnStyle
@@ -216,23 +226,27 @@ local function initFarms()
 		local x = (i - 1) * 17 + 1
 		local y = 1
 
-		if x > screenSize.x then
+		if x > screenSize[1] then
 			x = 1
 			y = y + 12
 		end
 
-		if y > screenSize.y then
+		if y > screenSize[2] then
 			break
 		end
 
 		local farm = Farm:new(x, y, farmNames[i], motor, storage)
-		table.insert(farms, farm)
+		farm:update(#storage.list())
+  table.insert(farms, farm)
 	end
 end
 
 local function drawUI()
+ term.clear()
+ term.setCursorPos(1, 1)
+ 
 	for _, f in ipairs(farms) do
-		f:draw()
+		f.ui:draw()
 	end
 end
 
@@ -246,33 +260,33 @@ end
 --  Main Program
 -- --------------------------------
 
-local mon = peripheral.find("moitor")
+local mon = peripheral.find("monitor")
 term.clear()
 
-if mon ~= nil then
+if mon then
 	mon.setTextScale(0.5)
 	term.redirect(mon)
 	term.clear()
 end
 
-screenSize = term.getSize()
+term.setCursorBlink(false)
+screenSize = table.pack(term.getSize())
 
 initFarms()
 drawUI()
 
 while true do
 	local eventBundle = table.pack(os.pullEvent())
-	local storage = nil
 
 	if eventBundle[1] == "timer" and eventBundle[2] == intervalTimer then
-		storage = #f.storagePeripheral.list()
 		onTimerEvent()
 	end
 
 	for _, f in ipairs(farms) do
-		if storage ~= nil and f.storage ~= storage then f:update(storage) end
+  local storage = f.storagePeripheral.list()
+		if storage and f.storage ~= #storage then f:update(#storage) end
 
-		f:event(eventBundle)
+		f.ui:event(eventBundle)
 	end
 
 	drawUI()
