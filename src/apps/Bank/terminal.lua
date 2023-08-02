@@ -750,7 +750,7 @@ local function createUI()
 		"bg")
 
 	confirmSendFunds:add(
-		uilib.Button:new("Back", 2, 2, 6, 3, confirmSendFunds, onRedirectBtnClick, {"sendFunds"}, dalse, styles.btn, "\x7f", 1),
+		uilib.Button:new("Back", 2, 2, 6, 3, confirmSendFunds, onRedirectBtnClick, {"sendFunds"}, false, styles.btn, "\x7f", 1),
 		"backBtn")
 
 	confirmSendFunds:add(
@@ -848,7 +848,7 @@ local function createUI()
 		"newPinTextBox")
 
 	changePin:add(
-		uilib.Label:new("Repeat new Pin:", 2, 17, chanhePin, styles.bg, false),
+		uilib.Label:new("Repeat new Pin:", 2, 17, changePin, styles.bg, false),
 		"repeatNewPinTitleLabel")
 	changePin:add(
 		uilib.TextBox:new(18, 16, 9, 3, 1, changePin, 6, true, true, nil, styles.tb),

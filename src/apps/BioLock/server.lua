@@ -27,7 +27,7 @@ local modemSide = "top"
 -- --------------------------------
 
 local title = "Auth Server"
-local version = "v1.0"
+local version = "v2.0"
 
 -- --------------------------------
 --  Internal Properties
@@ -92,26 +92,7 @@ local function auth(s, p)
     end
 
     -- Get auth data
-    local factors, tuuid, eName, uuuid, pinHash, aCode = table.unpack(p.contents)
-
-    -- Check if given factor types match the needed ones
-    local calcFactors = 0
-    if eName then calcFactors = calcFactors + 8 end
-    if uuuid then calcFactors = calcFactors + 4 end
-    if pinHash then calcFactors = calcFactors + 2 end
-    if aCode then calcFactors = calcFactors + 1 end
-
-    if factors ~= cTerm.factors then
-        comlib.sendResponse(sModem, s, "AUTH", "FAIL", {reason = "IFACT"})
-        return
-    end
-
-    if calcFactors ~= factors then
-        comlib.sendResponse(sModem, s, "AUTH", "FAIL", {reason = "IFACT"})
-        return
-    end
-
-    checkStr = checkStr .. textutils.serialise(factors)
+    local factors, tuuid, userName, uuuid, pinHash, twofaCode = table.unpack(p.contents)
 
     -- Get the terminal data of the current request
     local cTerm = nil
@@ -130,14 +111,33 @@ local function auth(s, p)
 
     checkStr = checkStr .. textutils.serialise(tuuid)
 
+    -- Check if given factor types match the needed ones (Factors a la 2FA)
+    local calcFactors = 0
+    if userName then calcFactors = calcFactors + 8 end
+    if uuuid then calcFactors = calcFactors + 4 end
+    if pinHash then calcFactors = calcFactors + 2 end
+    if twofaCode then calcFactors = calcFactors + 1 end
+
+    if factors ~= cTerm.factors then
+        comlib.sendResponse(sModem, s, "AUTH", "FAIL", {reason = "IFACT"})
+        return
+    end
+
+    if calcFactors ~= factors then
+        comlib.sendResponse(sModem, s, "AUTH", "FAIL", {reason = "IFACT"})
+        return
+    end
+
+    checkStr = checkStr .. textutils.serialise(factors)
+
     -- Variable for holding user data
     local user = nil
 
-    -- Convert given eName, if given, to uuuid
-    if eName then
+    -- Convert given userName, if given, to uuuid
+    if userName then
         local newUUUID = nil
         for _, v in pairs(udb) do
-            if v.eName == eName then
+            if v.userName == userName then
                 newUUUID = v.uuid
                 user = v
                 break
@@ -153,10 +153,10 @@ local function auth(s, p)
             uuuid = newUUUID
         end
 
-        checkStr = checkStr .. textutils.serialise(eName)
+        checkStr = checkStr .. textutils.serialise(userName)
     end
 
-    -- Chekci if uUUID is existing
+    -- Check if uUUID is existing
     if uuuid then
         if user then
             if uuuid ~= user.uuid then
@@ -207,13 +207,13 @@ local function auth(s, p)
     end
 
     -- Check if 2fa code matches, when given
-    if aCode then
-        if aCode ~= user.authCode.aCode and aCode ~= user.authCode.pCode then
+    if twofaCode then
+        if twofaCode ~= user.authCode.aCode and twofaCode ~= user.authCode.pCode then
             comlib.sendResponse(sModem, s, "AUTH", "FAIL", {reason = "I2FAC"})
             return
         end
 
-        checkStr = checkStr .. textutils.serialise(aCode)
+        checkStr = checkStr .. textutils.serialise(twofaCode)
     end
 
     -- Return success packet

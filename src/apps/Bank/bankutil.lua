@@ -250,7 +250,7 @@ local function changePIN(args)
     end
 
 	-- Change PIN for user
-	local uuid = getUUIDfromAccountNum(agrs[2])
+	local uuid = getUUIDfromAccountNum(args[2])
 	db[uuid].hash = sha.sha256(args[3])
 	updateDB()
 
